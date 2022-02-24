@@ -43,3 +43,6 @@ tags
 src/Tools/freecad.zip
 tsupdate_stderr.log
 tsupdate_stdout.log
+/build*/
+.vs/
+out/
