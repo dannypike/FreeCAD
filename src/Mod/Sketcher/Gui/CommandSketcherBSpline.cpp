@@ -407,23 +407,23 @@ bool CmdSketcherCompBSplineShowHideGeometryInformation::isActive(void)
 }
 
 // Convert to NURBS
-DEF_STD_CMD_A(CmdSketcherConvertToNURB)
+DEF_STD_CMD_A(CmdSketcherConvertToNURBS)
 
-CmdSketcherConvertToNURB::CmdSketcherConvertToNURB()
-    : Command("Sketcher_BSplineConvertToNURB")
+CmdSketcherConvertToNURBS::CmdSketcherConvertToNURBS()
+    : Command("Sketcher_BSplineConvertToNURBS")
 {
     sAppModule      = "Sketcher";
     sGroup          = "Sketcher";
     sMenuText       = QT_TR_NOOP("Convert geometry to B-spline");
     sToolTipText    = QT_TR_NOOP("Converts the selected geometry to a B-spline");
-    sWhatsThis      = "Sketcher_BSplineConvertToNURB";
+    sWhatsThis      = "Sketcher_BSplineConvertToNURBS";
     sStatusTip      = sToolTipText;
     sPixmap         = "Sketcher_BSplineApproximate";
     sAccel          = "";
     eType           = ForEdit;
 }
 
-void CmdSketcherConvertToNURB::activated(int iMsg)
+void CmdSketcherConvertToNURBS::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
 
@@ -440,25 +440,31 @@ void CmdSketcherConvertToNURB::activated(int iMsg)
     const std::vector<std::string> &SubNames = selection[0].getSubNames();
     Sketcher::SketchObject* Obj = static_cast<Sketcher::SketchObject*>(selection[0].getObject());
 
-    bool nurbsized = false;
-
     openCommand(QT_TRANSLATE_NOOP("Command", "Convert to NURBS"));
 
-    for (size_t i=0; i < SubNames.size(); i++) {
+    std::vector<int> GeoIdList;
+
+    for (const auto& subName : SubNames) {
         // only handle edges
-        if (SubNames[i].size() > 4 && SubNames[i].substr(0,4) == "Edge") {
-            int GeoId = std::atoi(SubNames[i].substr(4,4000).c_str()) - 1;
-            Gui::cmdAppObjectArgs(selection[0].getObject(), "convertToNURBS(%d) ", GeoId);
-            nurbsized = true;
+        if (subName.size() > 4 && subName.substr(0,4) == "Edge") {
+            int GeoId = std::atoi(subName.substr(4,4000).c_str()) - 1;
+            GeoIdList.push_back(GeoId);
         }
-        else if (SubNames[i].size() > 12 && SubNames[i].substr(0,12) == "ExternalEdge") {
-            int GeoId = - (std::atoi(SubNames[i].substr(12,4000).c_str()) + 2);
-            Gui::cmdAppObjectArgs(selection[0].getObject(), "convertToNURBS(%d) ", GeoId);
-            nurbsized = true;
+        else if (subName.size() > 12 && subName.substr(0,12) == "ExternalEdge") {
+            int GeoId = - (std::atoi(subName.substr(12,4000).c_str()) + 2);
+            GeoIdList.push_back(GeoId);
         }
     }
 
-    if (!nurbsized) {
+    // for creating the poles and knots
+    for (auto GeoId : GeoIdList) {
+        Gui::cmdAppObjectArgs(selection[0].getObject(), "convertToNURBS(%d) ", GeoId);
+    }
+    for (auto GeoId : GeoIdList) {
+        Gui::cmdAppObjectArgs(selection[0].getObject(), "exposeInternalGeometry(%d)", GeoId);
+    }
+
+    if (GeoIdList.empty()) {
         abortCommand();
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
                              QObject::tr("None of the selected elements is an edge."));
@@ -469,7 +475,7 @@ void CmdSketcherConvertToNURB::activated(int iMsg)
     tryAutoRecomputeIfNotSolve(Obj);
 }
 
-bool CmdSketcherConvertToNURB::isActive(void)
+bool CmdSketcherConvertToNURBS::isActive(void)
 {
     return isSketcherBSplineActive(getActiveGuiDocument(), true);
 }
@@ -1220,7 +1226,7 @@ void CreateSketcherCommandsBSpline(void)
     rcCmdMgr.addCommand(new CmdSketcherBSplineKnotMultiplicity());
     rcCmdMgr.addCommand(new CmdSketcherBSplinePoleWeight());
     rcCmdMgr.addCommand(new CmdSketcherCompBSplineShowHideGeometryInformation());
-    rcCmdMgr.addCommand(new CmdSketcherConvertToNURB());
+    rcCmdMgr.addCommand(new CmdSketcherConvertToNURBS());
     rcCmdMgr.addCommand(new CmdSketcherIncreaseDegree());
     rcCmdMgr.addCommand(new CmdSketcherDecreaseDegree());
     rcCmdMgr.addCommand(new CmdSketcherIncreaseKnotMultiplicity());
