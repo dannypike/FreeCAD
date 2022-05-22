@@ -39,6 +39,7 @@ class SoSeparator;
 class SoSwitch;
 class QCheckBox;
 class QTextEdit;
+class QTreeView;
 
 namespace PartGui {
 
@@ -79,7 +80,7 @@ class ResultModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
-    ResultModel(QObject *parent = 0);
+    ResultModel(QObject *parent = nullptr);
     ~ResultModel();
     QModelIndex index(int row, int column, const QModelIndex &parent) const;
     QModelIndex parent(const QModelIndex &child) const;
@@ -100,7 +101,7 @@ class TaskCheckGeometryResults : public QWidget
 {
     Q_OBJECT
 public:
-    TaskCheckGeometryResults(QWidget *parent = 0);
+    TaskCheckGeometryResults(QWidget *parent = nullptr);
     ~TaskCheckGeometryResults();
     QString getShapeContentString();
     void goCheck();

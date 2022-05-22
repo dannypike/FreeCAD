@@ -300,14 +300,14 @@ void ActionSelector::onItemDoubleClicked(QTreeWidgetItem * item, int column)
     if (treeWidget == availableWidget) {
         int index = availableWidget->indexOfTopLevelItem(item);
         item = availableWidget->takeTopLevelItem(index);
-        availableWidget->setCurrentItem(0);
+        availableWidget->setCurrentItem(nullptr);
         selectedWidget->addTopLevelItem(item);
         selectedWidget->setCurrentItem(item);
     }
     else if (treeWidget == selectedWidget) {
         int index = selectedWidget->indexOfTopLevelItem(item);
         item = selectedWidget->takeTopLevelItem(index);
-        selectedWidget->setCurrentItem(0);
+        selectedWidget->setCurrentItem(nullptr);
         availableWidget->addTopLevelItem(item);
         availableWidget->setCurrentItem(item);
     }
@@ -319,7 +319,7 @@ void ActionSelector::on_addButton_clicked()
     if (item) {
         int index = availableWidget->indexOfTopLevelItem(item);
         item = availableWidget->takeTopLevelItem(index);
-        availableWidget->setCurrentItem(0);
+        availableWidget->setCurrentItem(nullptr);
         selectedWidget->addTopLevelItem(item);
         selectedWidget->setCurrentItem(item);
     }
@@ -331,7 +331,7 @@ void ActionSelector::on_removeButton_clicked()
     if (item) {
         int index = selectedWidget->indexOfTopLevelItem(item);
         item = selectedWidget->takeTopLevelItem(index);
-        selectedWidget->setCurrentItem(0);
+        selectedWidget->setCurrentItem(nullptr);
         availableWidget->addTopLevelItem(item);
         availableWidget->setCurrentItem(item);
     }
@@ -522,7 +522,6 @@ void ModifierLineEdit::keyPressEvent (QKeyEvent * e)
 
 // ------------------------------------------------------------------------------
 
-#if QT_VERSION >= 0x050200
 ClearLineEdit::ClearLineEdit (QWidget * parent)
   : QLineEdit(parent)
 {
@@ -542,41 +541,6 @@ void ClearLineEdit::updateClearButton(const QString& text)
 {
     clearAction->setVisible(!text.isEmpty());
 }
-#else
-ClearLineEdit::ClearLineEdit (QWidget * parent)
-  : QLineEdit(parent)
-{
-    clearButton = new QToolButton(this);
-    QPixmap pixmap(BitmapFactory().pixmapFromSvg(":/icons/edit-cleartext.svg", QSize(18, 18)));
-    clearButton->setIcon(QIcon(pixmap));
-    clearButton->setIconSize(pixmap.size());
-    clearButton->setCursor(Qt::ArrowCursor);
-    clearButton->setStyleSheet(QString::fromLatin1("QToolButton { border: none; padding: 0px; }"));
-    clearButton->hide();
-    connect(clearButton, SIGNAL(clicked()), this, SLOT(clear()));
-    connect(this, SIGNAL(textChanged(const QString&)),
-            this, SLOT(updateClearButton(const QString&)));
-    int frameWidth = style()->pixelMetric(QStyle::PM_DefaultFrameWidth);
-    setStyleSheet(QString::fromLatin1("QLineEdit { padding-right: %1px; } ")
-                  .arg(clearButton->sizeHint().width() + frameWidth + 1));
-    QSize msz = minimumSizeHint();
-    setMinimumSize(qMax(msz.width(), clearButton->sizeHint().height() + frameWidth * 2 + 2),
-                   msz.height());
-}
-
-void ClearLineEdit::resizeEvent(QResizeEvent *)
-{
-    QSize sz = clearButton->sizeHint();
-    int frameWidth = style()->pixelMetric(QStyle::PM_DefaultFrameWidth);
-    clearButton->move(rect().right() - frameWidth - sz.width(),
-                      (rect().bottom() + 1 - sz.height())/2);
-}
-
-void ClearLineEdit::updateClearButton(const QString& text)
-{
-    clearButton->setVisible(!text.isEmpty());
-}
-#endif
 
 // ------------------------------------------------------------------------------
 
@@ -666,7 +630,7 @@ struct ColorButtonP
     bool dirty;
 
     ColorButtonP()
-        : cd(0)
+        : cd(nullptr)
         , allowChange(true)
         , autoChange(false)
         , drawFrame(true)
@@ -1167,7 +1131,7 @@ void LabelButton::browse()
 
 // ----------------------------------------------------------------------
 
-ToolTip* ToolTip::inst = 0;
+ToolTip* ToolTip::inst = nullptr;
 
 ToolTip* ToolTip::instance()
 {

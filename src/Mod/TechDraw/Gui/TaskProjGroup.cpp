@@ -51,6 +51,7 @@
 #include <Mod/TechDraw/App/DrawView.h>
 #include <Mod/TechDraw/App/DrawViewPart.h>
 
+#include "MDIViewPage.h"
 #include "ViewProviderPage.h"
 #include "ViewProviderProjGroup.h"
 #include "ViewProviderProjGroupItem.h"
@@ -436,7 +437,7 @@ const char * TaskProjGroup::viewChkIndexToCStr(int index)
     //   First Angle:  FBRight  B  FBL
     //                  Right   F   L  Rear
     //                 FTRight  T  FTL
-    assert (multiView != NULL);
+    assert (multiView != nullptr);
 
     bool thirdAngle = multiView->usedProjectionType().isValue("Third Angle");
     switch(index) {
@@ -450,12 +451,12 @@ const char * TaskProjGroup::viewChkIndexToCStr(int index)
         case 7: return (thirdAngle ? "FrontBottomLeft" : "FrontTopRight");
         case 8: return (thirdAngle ? "Bottom" : "Top");
         case 9: return (thirdAngle ? "FrontBottomRight" : "FrontTopLeft");
-        default: return NULL;
+        default: return nullptr;
     }
 }
 void TaskProjGroup::setupViewCheckboxes(bool addConnections)
 {
-    if ( multiView == NULL ) {
+    if ( multiView == nullptr ) {
         return;
     }
 
@@ -479,7 +480,7 @@ void TaskProjGroup::setupViewCheckboxes(bool addConnections)
         }
 
         const char *viewStr = viewChkIndexToCStr(i);
-        if ( viewStr != NULL && multiView->hasProjection(viewStr) ) {
+        if ( viewStr != nullptr && multiView->hasProjection(viewStr) ) {
             box->setCheckState(Qt::Checked);
         } else {
             box->setCheckState(Qt::Unchecked);
@@ -525,7 +526,8 @@ bool TaskProjGroup::accept()
 {
 //    Base::Console().Message("TPG::accept()\n");
     Gui::Document* doc = Gui::Application::Instance->getDocument(multiView->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     multiView->recomputeChildren();
     multiView->recomputeFeature();
@@ -538,7 +540,8 @@ bool TaskProjGroup::accept()
 bool TaskProjGroup::reject()
 {
     Gui::Document* doc = Gui::Application::Instance->getDocument(multiView->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     if (getCreateMode()) {
         //remove the object completely from the document
@@ -577,7 +580,7 @@ TaskDlgProjGroup::TaskDlgProjGroup(TechDraw::DrawProjGroup* featView, bool mode)
     //viewProvider = dynamic_cast<const ViewProviderProjGroup *>(featView);
     widget  = new TaskProjGroup(featView,mode);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/TechDraw_ProjectionGroup"),
-                                         widget->windowTitle(), true, 0);
+                                         widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

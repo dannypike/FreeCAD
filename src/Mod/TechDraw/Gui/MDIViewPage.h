@@ -20,28 +20,28 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef TECHDRAWGUI_MDIVIEWPAGE_H
 #define TECHDRAWGUI_MDIVIEWPAGE_H
 
-#include "ViewProviderPage.h"
+#include <QPointF>
+#include <QPrinter>
 
 #include <Gui/MDIView.h>
 #include <Gui/MDIViewPy.h>
 #include <Gui/Selection.h>
 
-#include <QPrinter>
-#include <QGraphicsScene>
-#include <QPointF>
+#include "ViewProviderPage.h"
 
-#include <Mod/TechDraw/App/DrawPage.h>
 
 QT_BEGIN_NAMESPACE
 class QAction;
+class QGraphicsItem;
+class QGraphicsScene;
 class QTimer;
 QT_END_NAMESPACE
 
 namespace TechDraw {
+class DrawPage;
 class DrawTemplate;
 class DrawView;
 }
@@ -59,7 +59,7 @@ class TechDrawGuiExport MDIViewPage : public Gui::MDIView, public Gui::Selection
     TYPESYSTEM_HEADER();
 
 public:
-    MDIViewPage(ViewProviderPage *page, Gui::Document* doc, QWidget* parent = 0);
+    MDIViewPage(ViewProviderPage *page, Gui::Document* doc, QWidget* parent = nullptr);
     virtual ~MDIViewPage();
 
     void addChildrenToPage(void);

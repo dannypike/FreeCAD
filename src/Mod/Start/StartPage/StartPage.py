@@ -106,7 +106,7 @@ def getInfo(filename):
             import gnomevfs
         except Exception:
             # alternative method
-            import hashlib,urllib.parse
+            import hashlib
             fhash = hashlib.md5(bytes(urllib.parse.quote("file://"+path,safe=":/"),"ascii")).hexdigest()
             thumb = os.path.join(os.path.expanduser("~"),".thumbnails","normal",fhash+".png")
         else:
@@ -289,7 +289,7 @@ def handle():
     else:
         html_filename = os.path.join(resources_dir, "StartPage.html")
     js_filename = os.path.join(resources_dir, "StartPage.js")
-    css_filename = os.path.join(resources_dir, "StartPage.css")
+    css_filename = p.GetString("CSSFile",os.path.join(resources_dir, "StartPage.css"))
     with open(html_filename, 'r') as f:
         HTML = f.read()
     with open(js_filename, 'r') as f:
@@ -483,7 +483,7 @@ def handle():
             img = os.path.join(FreeCAD.getResourceDir(),"Mod",wn,"Resources","icons",wn+"Workbench.svg")
             if not os.path.exists(img):
                 w = FreeCADGui.listWorkbenches()[wb]
-                if hasattr(w,"Icon"):
+                if hasattr(w,"Icon") and w.Icon:
                     xpm = w.Icon
                     if "XPM" in xpm:
                         xpm = xpm.replace("\n        ","\n") # some XPMs have some indent that QT doesn't like

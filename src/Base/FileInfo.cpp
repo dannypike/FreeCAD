@@ -27,15 +27,18 @@
 #ifndef _PreComp_
 # include <algorithm>
 # include <cassert>
+# include <codecvt>
 # include <cstring>
+# include <locale>
 # if defined (FC_OS_LINUX) || defined(FC_OS_CYGWIN) || defined(FC_OS_MACOSX) || defined(FC_OS_BSD)
 # include <dirent.h>
 # include <unistd.h>
-# include <sys/stat.h>
 # elif defined (FC_OS_WIN32)
 # include <io.h>
 # include <Windows.h>
 # endif
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 #include "FileInfo.h"
@@ -65,9 +68,9 @@ using namespace Base;
 std::string ConvertFromWideString(const std::wstring& string)
 {
     int neededSize = WideCharToMultiByte(CP_UTF8, 0, string.c_str(), -1, 0, 0,0,0);
-    char * CharString = new char[neededSize];
+    char * CharString = new char[static_cast<size_t>(neededSize)];
     WideCharToMultiByte(CP_UTF8, 0, string.c_str(), -1, CharString, neededSize,0,0);
-    std::string String((char*)CharString);
+    std::string String(CharString);
     delete [] CharString;
     CharString = NULL;
     return String;
@@ -76,7 +79,7 @@ std::string ConvertFromWideString(const std::wstring& string)
 std::wstring ConvertToWideString(const std::string& string)
 {
     int neededSize = MultiByteToWideChar(CP_UTF8, 0, string.c_str(), -1, 0, 0);
-    wchar_t* wideCharString = new wchar_t[neededSize];
+    wchar_t* wideCharString = new wchar_t[static_cast<size_t>(neededSize)];
     MultiByteToWideChar(CP_UTF8, 0, string.c_str(), -1, wideCharString, neededSize);
     std::wstring wideString(wideCharString);
     delete [] wideCharString;
@@ -109,7 +112,7 @@ const std::string &FileInfo::getTempPath()
         wchar_t buf[MAX_PATH + 2];
         GetTempPathW(MAX_PATH + 1,buf);
         int neededSize = WideCharToMultiByte(CP_UTF8, 0, buf, -1, 0, 0, 0, 0);
-        char* dest = new char[neededSize];
+        char* dest = new char[static_cast<size_t>(neededSize)];
         WideCharToMultiByte(CP_UTF8, 0, buf, -1,dest, neededSize, 0, 0);
         tempPath = dest;
         delete [] dest;
@@ -189,6 +192,27 @@ std::string FileInfo::getTempFileName(const char* FileName, const char* Path)
 #endif
 }
 
+boost::filesystem::path FileInfo::stringToPath(const std::string& str)
+{
+#if defined(FC_OS_WIN32)
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    boost::filesystem::path path(converter.from_bytes(str));
+#else
+    boost::filesystem::path path(str);
+#endif
+    return path;
+}
+
+std::string FileInfo::pathToString(const boost::filesystem::path& p)
+{
+#if defined(FC_OS_WIN32)
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.to_bytes(p.wstring());
+#else
+    return p.string();
+#endif
+}
+
 void FileInfo::setFile(const char* name)
 {
     if (!name) {
@@ -251,16 +275,12 @@ std::string FileInfo::fileNamePure () const
 std::wstring FileInfo::toStdWString() const
 {
     // As FileName is UTF-8 is encoded we have to convert it
-    // for Windows because the path names are UCS-2 encoded.
+    // for Windows because the path names are UTF-16 encoded.
 #ifdef FC_OS_WIN32
     return ConvertToWideString(FileName);
 #else
-    // FIXME: For MacOS the path names are UCS-4 encoded.
-    // For the moment we cannot handle path names containing
-    // non-ASCII characters.
-    // For Linux the paths names are encoded in UTF-8 so we actually
-    // don't need this method therefore.
-    return std::wstring();
+    // On other platforms it's discouraged to use wchar_t for file names
+    throw Base::FileException("Cannot use FileInfo::toStdWString() on this platform");
 #endif
 }
 
@@ -353,7 +373,8 @@ bool FileInfo::isFile () const
         // If we can open it must be an existing file, otherwise we assume it
         // is a directory (which doesn't need to be true for any cases)
         std::ifstream str(FileName.c_str(), std::ios::in | std::ios::binary);
-        if (!str) return false;
+        if (!str)
+            return false;
         str.close();
         return true;
     }
@@ -382,14 +403,15 @@ bool FileInfo::isDir () const
             return false;
         }
         return S_ISDIR(st.st_mode);
-#endif
+#else
         return false;
+#endif
     }
     else
         return false;
 
     // TODO: Check for valid path name
-    return true;
+    //return true;
 }
 
 unsigned int FileInfo::size () const
@@ -510,9 +532,24 @@ bool FileInfo::createDirectory() const
 #endif
 }
 
+bool FileInfo::createDirectories() const
+{
+    try {
+        boost::filesystem::path path(stringToPath(FileName));
+        if (boost::filesystem::exists(path))
+            return true;
+        boost::filesystem::create_directories(path);
+        return true;
+    }
+    catch (const boost::filesystem::filesystem_error&) {
+        return false;
+    }
+}
+
 bool FileInfo::deleteDirectory() const
 {
-    if (isDir() == false ) return false;
+    if (isDir() == false )
+        return false;
 #if defined (FC_OS_WIN32)
     std::wstring wstr = toStdWString();
     return _wrmdir(wstr.c_str()) == 0;
@@ -525,7 +562,8 @@ bool FileInfo::deleteDirectory() const
 
 bool FileInfo::deleteDirectoryRecursive() const
 {
-    if (isDir() == false ) return false;
+    if (isDir() == false )
+        return false;
     std::vector<Base::FileInfo> List = getDirectoryContent();
 
     for (std::vector<Base::FileInfo>::iterator It = List.begin();It!=List.end();++It) {

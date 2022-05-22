@@ -21,7 +21,11 @@
  ***************************************************************************/
 
 #include "PreCompiled.h"
+
 #ifndef _PreComp_
+# include <iomanip>
+# include <ios>
+# include <sstream>
 # include <Inventor/actions/SoGLRenderAction.h>
 # include <Inventor/elements/SoGLCacheContextElement.h>
 # include <Inventor/fields/SoSFImage.h>
@@ -31,7 +35,6 @@
 # include <QFile>
 # include <QImage>
 # include <QImageWriter>
-# include <QPainter>
 #endif
 
 #if !defined(FC_OS_MACOSX)
@@ -40,21 +43,16 @@
 # include <GL/glext.h>
 #endif
 
-//gcc
-# include <iomanip>
-# include <ios>
-# include <sstream>
+#include <QOffscreenSurface>
 
+#include <App/Application.h>
 #include <Base/FileInfo.h>
 #include <Base/Exception.h>
 #include <Base/Console.h>
-#include <App/Application.h>
 
 #include "SoFCOffscreenRenderer.h"
 #include "BitmapFactory.h"
 
-#include <QOffscreenSurface>
-#include <QOpenGLContext>
 
 using namespace Gui;
 using namespace std;
@@ -64,12 +62,12 @@ void writeJPEGComment(const std::string&, QByteArray&);
 
 // ---------------------------------------------------------------
 
-SoFCOffscreenRenderer* SoFCOffscreenRenderer::inst = 0;
+SoFCOffscreenRenderer* SoFCOffscreenRenderer::inst = nullptr;
 
 
 SoFCOffscreenRenderer& SoFCOffscreenRenderer::instance()
 {
-    if (inst==0)
+    if (inst==nullptr)
         inst = new SoFCOffscreenRenderer(SbViewportRegion());
     return *inst;
 }
@@ -410,12 +408,11 @@ void SoQtOffscreenRenderer::init(const SbViewportRegion & vpr,
     this->didallocation = glrenderaction ? false : true;
     this->viewport = vpr;
 
-    this->framebuffer = NULL;
+    this->framebuffer = nullptr;
     this->numSamples = -1;
     //this->texFormat = GL_RGBA32F_ARB;
     this->texFormat = GL_RGB32F_ARB;
     this->cache_context = 0;
-    this->pbuffer = false;
 }
 
 /*!
@@ -499,7 +496,9 @@ SoQtOffscreenRenderer::getBackgroundColor(void) const
 void
 SoQtOffscreenRenderer::setGLRenderAction(SoGLRenderAction * action)
 {
-    if (action == PRIVATE(this)->renderaction) { return; }
+    if (action == PRIVATE(this)->renderaction) {
+        return;
+    }
 
     if (PRIVATE(this)->didallocation) { delete PRIVATE(this)->renderaction; }
     PRIVATE(this)->renderaction = action;
@@ -539,18 +538,6 @@ SoQtOffscreenRenderer::internalTextureFormat() const
     return PRIVATE(this)->texFormat;
 }
 
-void
-SoQtOffscreenRenderer::setPbufferEnable(SbBool enable)
-{
-    PRIVATE(this)->pbuffer = enable;
-}
-
-SbBool
-SoQtOffscreenRenderer::getPbufferEnable(void) const
-{
-    return PRIVATE(this)->pbuffer;
-}
-
 // *************************************************************************
 
 void
@@ -565,7 +552,7 @@ SoQtOffscreenRenderer::makeFrameBuffer(int width, int height, int samples)
 {
     if (framebuffer) {
         delete framebuffer;
-        framebuffer = NULL;
+        framebuffer = nullptr;
     }
 
     viewport.setWindowSize(width, height);
@@ -623,7 +610,7 @@ SoQtOffscreenRenderer::renderFromBase(SoBase * base)
 
     // needed to clear viewport after glViewport() is called from
     // SoGLRenderAction
-    this->renderaction->addPreRenderCallback(pre_render_cb, NULL);
+    this->renderaction->addPreRenderCallback(pre_render_cb, nullptr);
     this->renderaction->setViewportRegion(this->viewport);
 
     if (base->isOfType(SoNode::getClassTypeId()))
@@ -634,7 +621,7 @@ SoQtOffscreenRenderer::renderFromBase(SoBase * base)
         assert(false && "Cannot apply to anything else than an SoNode or an SoPath");
     }
 
-    this->renderaction->removePreRenderCallback(pre_render_cb, NULL);
+    this->renderaction->removePreRenderCallback(pre_render_cb, nullptr);
     framebuffer->release();
 
     this->renderaction->setCacheContext(oldcontext); // restore old

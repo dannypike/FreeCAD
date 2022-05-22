@@ -20,21 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
 # include <QApplication>
 # include <QKeyEvent>
 # include <QLabel>
-# include <QTextCursor>
 # include <QPlainTextEdit>
+# include <QTextCursor>
 # include <QToolTip>
 #endif
 
-#include <CXX/Objects.hxx>
-#include <Base/Interpreter.h>
-#include <Base/PyObjectBase.h>
 #include <App/Property.h>
 #include <App/PropertyContainer.h>
 #include <App/PropertyContainerPy.h>
@@ -42,10 +38,14 @@
 #include <App/DocumentObject.h>
 #include <App/DocumentPy.h>
 #include <App/DocumentObjectPy.h>
+#include <Base/Console.h>
+#include <Base/Interpreter.h>
+#include <Base/PyObjectBase.h>
 #include <Gui/BitmapFactory.h>
-#include <Gui/Document.h>
 #include <Gui/DocumentPy.h>
+
 #include "CallTips.h"
+
 
 Q_DECLARE_METATYPE( Gui::CallTip ) //< allows use of QVariant
 
@@ -234,7 +234,7 @@ QMap<QString, CallTip> CallTipsList::extractTips(const QString& context) const
             return tips;
         }
 
-        PyObject* eval = 0;
+        PyObject* eval = nullptr;
         if (PyCode_Check(code)) {
             eval = PyEval_EvalCode(code, dict.ptr(), dict.ptr());
         }
@@ -443,7 +443,8 @@ void CallTipsList::extractTipsFromProperties(Py::Object& obj, QMap<QString, Call
     App::PropertyContainerPy* cont = (App::PropertyContainerPy*)(obj.ptr());
     App::PropertyContainer* container = cont->getPropertyContainerPtr();
     // Make sure that the C++ object is alive
-    if (!container) return;
+    if (!container)
+        return;
     std::map<std::string,App::Property*> Map;
     container->getPropertyMap(Map);
 
@@ -689,7 +690,8 @@ bool CallTipsList::eventFilter(QObject * watched, QEvent * event)
 void CallTipsList::callTipItemActivated(QListWidgetItem *item)
 {
     hide();
-    if (!item->isSelected()) return;
+    if (!item->isSelected())
+        return;
 
     QString text = item->text();
     QTextCursor cursor = textEdit->textCursor();

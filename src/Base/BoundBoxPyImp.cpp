@@ -23,8 +23,6 @@
 
 #include "PreCompiled.h"
 
-#include "Base/BoundBox.h"
-
 // inclusion of the generated files (generated out of BoundBoxPy.xml)
 #include "MatrixPy.h"
 #include "VectorPy.h"
@@ -93,14 +91,12 @@ int BoundBoxPy::PyInit(PyObject* args, PyObject* /*kwd*/)
     PyErr_Clear(); // set by PyArg_ParseTuple()
     if (PyArg_ParseTuple(args,"O!O!",&(Base::VectorPy::Type), &object1,
                                      &(Base::VectorPy::Type), &object2)) {
-        // Note: must be static_cast, not reinterpret_cast
         ptr->Add(*(static_cast<Base::VectorPy*>(object1)->getVectorPtr()));
         ptr->Add(*(static_cast<Base::VectorPy*>(object2)->getVectorPtr()));
         return 0;
     }
     PyErr_Clear(); // set by PyArg_ParseTuple()
     if (PyArg_ParseTuple(args,"O!",&(Base::BoundBoxPy::Type), &object1)) {
-        // Note: must be static_cast, not reinterpret_cast
         *ptr = *(static_cast<Base::BoundBoxPy*>(object1)->getBoundBoxPtr());
         return 0;
     }
@@ -326,7 +322,7 @@ PyObject*  BoundBoxPy::getIntersectionPoint(PyObject *args)
             return new VectorPy(point);
         }
         else {
-            PyErr_SetString(Base::BaseExceptionFreeCADError, "No intersection");
+            PyErr_SetString(Base::PyExc_FC_GeneralError, "No intersection");
             return nullptr;
         }
     }

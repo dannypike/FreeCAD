@@ -54,11 +54,11 @@ std::vector<App::DocumentObject*> ViewProviderLoft::claimChildren(void)const
     PartDesign::Loft* pcLoft = static_cast<PartDesign::Loft*>(getObject());
 
     App::DocumentObject* sketch = pcLoft->getVerifiedSketch(true);
-    if (sketch != NULL)
+    if (sketch != nullptr)
         temp.push_back(sketch);
 
     for(App::DocumentObject* obj : pcLoft->Sections.getValues()) {
-        if (obj != NULL && obj->isDerivedFrom(Part::Part2DObject::getClassTypeId()))
+        if (obj != nullptr && obj->isDerivedFrom(Part::Part2DObject::getClassTypeId()))
             temp.push_back(obj);
     }
 
@@ -149,9 +149,12 @@ void ViewProviderLoft::highlightReferences(ViewProviderLoft::Reference mode, boo
 
 void ViewProviderLoft::highlightReferences(Part::Feature* base, const std::vector<std::string>& elements, bool on)
 {
+    if (!base)
+        return;
+
     PartGui::ViewProviderPart* svp = dynamic_cast<PartGui::ViewProviderPart*>(
                 Gui::Application::Instance->getViewProvider(base));
-    if (svp == nullptr)
+    if (!svp)
         return;
 
     std::vector<App::Color>& edgeColors = originalLineColors[base->getID()];

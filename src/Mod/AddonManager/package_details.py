@@ -2,7 +2,7 @@
 
 # ***************************************************************************
 # *                                                                         *
-# *   Copyright (c) 2021 Chris Hennes <chennes@pioneerlibrarysystem.org>    *
+# *   Copyright (c) 2022 FreeCAD Project Association                        *
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License (LGPL)    *
@@ -34,7 +34,7 @@ import FreeCADGui
 
 import addonmanager_utilities as utils
 from addonmanager_workers import GetMacroDetailsWorker, CheckSingleUpdateWorker
-from AddonManagerRepo import AddonManagerRepo
+from Addon import Addon
 import NetworkManager
 from change_branch import ChangeBranchDialog
 
@@ -71,12 +71,12 @@ except Exception:
 class PackageDetails(QWidget):
 
     back = Signal()
-    install = Signal(AddonManagerRepo)
-    uninstall = Signal(AddonManagerRepo)
-    update = Signal(AddonManagerRepo)
-    execute = Signal(AddonManagerRepo)
-    update_status = Signal(AddonManagerRepo)
-    check_for_update = Signal(AddonManagerRepo)
+    install = Signal(Addon)
+    uninstall = Signal(Addon)
+    update = Signal(Addon)
+    execute = Signal(Addon)
+    update_status = Signal(Addon)
+    check_for_update = Signal(Addon)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -110,7 +110,7 @@ class PackageDetails(QWidget):
                 self.ui.loadingLabel.show()
                 self.ui.webView.hide()
 
-    def show_repo(self, repo: AddonManagerRepo, reload: bool = False) -> None:
+    def show_repo(self, repo: Addon, reload: bool = False) -> None:
 
         # If this is the same repo we were already showing, we do not have to do the
         # expensive refetch unless reload is true
@@ -136,24 +136,20 @@ class PackageDetails(QWidget):
                     self.worker.requestInterruption()
                     self.worker.wait()
 
-            if repo.repo_type == AddonManagerRepo.RepoType.MACRO:
+            if repo.repo_type == Addon.Kind.MACRO:
                 self.show_macro(repo)
                 self.ui.buttonExecute.show()
-            elif repo.repo_type == AddonManagerRepo.RepoType.WORKBENCH:
+            elif repo.repo_type == Addon.Kind.WORKBENCH:
                 self.show_workbench(repo)
                 self.ui.buttonExecute.hide()
-            elif repo.repo_type == AddonManagerRepo.RepoType.PACKAGE:
+            elif repo.repo_type == Addon.Kind.PACKAGE:
                 self.show_package(repo)
                 self.ui.buttonExecute.hide()
 
-        if self.status_update_thread is not None:
-            if not self.status_update_thread.isFinished():
-                self.status_update_thread.requestInterruption()
-                self.status_update_thread.wait()
-
-        if repo.status() == AddonManagerRepo.UpdateStatus.UNCHECKED:
-            self.status_update_thread = QThread()
-            self.status_update_worker = CheckSingleUpdateWorker(repo, self)
+        if repo.status() == Addon.Status.UNCHECKED:
+            if not self.status_update_thread:
+                self.status_update_thread = QThread()
+            self.status_update_worker = CheckSingleUpdateWorker(repo)
             self.status_update_worker.moveToThread(self.status_update_thread)
             self.status_update_thread.finished.connect(
                 self.status_update_worker.deleteLater
@@ -169,7 +165,7 @@ class PackageDetails(QWidget):
         repo = self.repo
         self.set_change_branch_button_state()
         self.set_disable_button_state()
-        if status != AddonManagerRepo.UpdateStatus.NOT_INSTALLED:
+        if status != Addon.Status.NOT_INSTALLED:
 
             version = repo.installed_version
             date = ""
@@ -200,7 +196,7 @@ class PackageDetails(QWidget):
                     translate("AddonsInstaller", "Installed") + ". "
                 )
 
-            if status == AddonManagerRepo.UpdateStatus.UPDATE_AVAILABLE:
+            if status == Addon.Status.UPDATE_AVAILABLE:
                 if repo.metadata:
                     installed_version_string += (
                         "<b>"
@@ -229,10 +225,10 @@ class PackageDetails(QWidget):
                         )
                         + ".</b>"
                     )
-            elif status == AddonManagerRepo.UpdateStatus.NO_UPDATE_AVAILABLE:
+            elif status == Addon.Status.NO_UPDATE_AVAILABLE:
                 detached_head = False
                 branch = repo.branch
-                if have_git and repo.repo_type != AddonManagerRepo.RepoType.MACRO:
+                if have_git and repo.repo_type != Addon.Kind.MACRO:
                     basedir = FreeCAD.getUserAppDataDir()
                     moddir = os.path.join(basedir, "Mod", repo.name)
                     if os.path.exists(os.path.join(moddir, ".git")):
@@ -256,14 +252,14 @@ class PackageDetails(QWidget):
                         ).format(branch)
                         + "."
                     )
-            elif status == AddonManagerRepo.UpdateStatus.PENDING_RESTART:
+            elif status == Addon.Status.PENDING_RESTART:
                 installed_version_string += (
                     translate(
                         "AddonsInstaller", "Updated, please restart FreeCAD to use"
                     )
                     + "."
                 )
-            elif status == AddonManagerRepo.UpdateStatus.UNCHECKED:
+            elif status == Addon.Status.UNCHECKED:
 
                 pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
                 autocheck = pref.GetBool("AutoCheck", False)
@@ -279,7 +275,7 @@ class PackageDetails(QWidget):
 
             installed_version_string += "</h3>"
             self.ui.labelPackageDetails.setText(installed_version_string)
-            if repo.status() == AddonManagerRepo.UpdateStatus.UPDATE_AVAILABLE:
+            if repo.status() == Addon.Status.UPDATE_AVAILABLE:
                 self.ui.labelPackageDetails.setStyleSheet(
                     "color:" + utils.attention_color_string()
                 )
@@ -306,32 +302,32 @@ class PackageDetails(QWidget):
             self.ui.labelPackageDetails.hide()
             self.ui.labelInstallationLocation.hide()
 
-        if status == AddonManagerRepo.UpdateStatus.NOT_INSTALLED:
+        if status == Addon.Status.NOT_INSTALLED:
             self.ui.buttonInstall.show()
             self.ui.buttonUninstall.hide()
             self.ui.buttonUpdate.hide()
             self.ui.buttonCheckForUpdate.hide()
-        elif status == AddonManagerRepo.UpdateStatus.NO_UPDATE_AVAILABLE:
+        elif status == Addon.Status.NO_UPDATE_AVAILABLE:
             self.ui.buttonInstall.hide()
             self.ui.buttonUninstall.show()
             self.ui.buttonUpdate.hide()
             self.ui.buttonCheckForUpdate.hide()
-        elif status == AddonManagerRepo.UpdateStatus.UPDATE_AVAILABLE:
+        elif status == Addon.Status.UPDATE_AVAILABLE:
             self.ui.buttonInstall.hide()
             self.ui.buttonUninstall.show()
             self.ui.buttonUpdate.show()
             self.ui.buttonCheckForUpdate.hide()
-        elif status == AddonManagerRepo.UpdateStatus.UNCHECKED:
+        elif status == Addon.Status.UNCHECKED:
             self.ui.buttonInstall.hide()
             self.ui.buttonUninstall.show()
             self.ui.buttonUpdate.hide()
             self.ui.buttonCheckForUpdate.show()
-        elif status == AddonManagerRepo.UpdateStatus.PENDING_RESTART:
+        elif status == Addon.Status.PENDING_RESTART:
             self.ui.buttonInstall.hide()
             self.ui.buttonUninstall.show()
             self.ui.buttonUpdate.hide()
             self.ui.buttonCheckForUpdate.hide()
-        elif status == AddonManagerRepo.UpdateStatus.CANNOT_CHECK:
+        elif status == Addon.Status.CANNOT_CHECK:
             self.ui.buttonInstall.hide()
             self.ui.buttonUninstall.show()
             self.ui.buttonUpdate.show()
@@ -373,7 +369,10 @@ class PackageDetails(QWidget):
             self.ui.labelWarningInfo.show()
             self.ui.labelWarningInfo.setText(
                 "<h2>"
-                + translate("AddonsInstaller", "WARNING: This addon is currently installed, but disabled. Use the 'enable' button to re-enable.")
+                + translate(
+                    "AddonsInstaller",
+                    "WARNING: This addon is currently installed, but disabled. Use the 'enable' button to re-enable.",
+                )
                 + "</h2>"
             )
             self.ui.labelWarningInfo.setStyleSheet(
@@ -385,10 +384,7 @@ class PackageDetails(QWidget):
 
     def requires_newer_freecad(self) -> Optional[str]:
         # If it's not installed, check to see if it's for a newer version of FreeCAD
-        if (
-            self.repo.status() == AddonManagerRepo.UpdateStatus.NOT_INSTALLED
-            and self.repo.metadata
-        ):
+        if self.repo.status() == Addon.Status.NOT_INSTALLED and self.repo.metadata:
             # Only hide if ALL content items require a newer version, otherwise
             # it's possible that this package actually provides versions of itself
             # for newer and older versions
@@ -420,11 +416,11 @@ class PackageDetails(QWidget):
             return
 
         # Is this repo installed? If not, return.
-        if self.repo.status() == AddonManagerRepo.UpdateStatus.NOT_INSTALLED:
+        if self.repo.status() == Addon.Status.NOT_INSTALLED:
             return
 
         # Is it a Macro? If so, return:
-        if self.repo.repo_type == AddonManagerRepo.RepoType.MACRO:
+        if self.repo.repo_type == Addon.Kind.MACRO:
             return
 
         # Can we actually switch branches? If not, return.
@@ -445,14 +441,14 @@ class PackageDetails(QWidget):
         self.ui.buttonEnable.hide()
         self.ui.buttonDisable.hide()
         status = self.repo.status()
-        if status != AddonManagerRepo.UpdateStatus.NOT_INSTALLED:
+        if status != Addon.Status.NOT_INSTALLED:
             disabled = self.repo.is_disabled()
             if disabled:
                 self.ui.buttonEnable.show()
             else:
                 self.ui.buttonDisable.show()
 
-    def show_workbench(self, repo: AddonManagerRepo) -> None:
+    def show_workbench(self, repo: Addon) -> None:
         """loads information of a given workbench"""
         url = utils.get_readme_html_url(repo)
         if HAS_QTWEBENGINE:
@@ -463,7 +459,7 @@ class PackageDetails(QWidget):
             text = readme_data.data().decode("utf8")
             self.ui.textBrowserReadMe.setHtml(text)
 
-    def show_package(self, repo: AddonManagerRepo) -> None:
+    def show_package(self, repo: Addon) -> None:
         """Show the details for a package (a repo with a package.xml metadata file)"""
 
         readme_url = None
@@ -483,7 +479,7 @@ class PackageDetails(QWidget):
             text = readme_data.data().decode("utf8")
             self.ui.textBrowserReadMe.setHtml(text)
 
-    def show_macro(self, repo: AddonManagerRepo) -> None:
+    def show_macro(self, repo: Addon) -> None:
         """loads information of a given macro"""
 
         if not repo.macro.url:
@@ -495,15 +491,35 @@ class PackageDetails(QWidget):
             self.macro_readme_updated()
 
     def macro_readme_updated(self):
+        url = self.repo.macro.wiki
+        if not url:
+            url = self.repo.macro.url
+
         if HAS_QTWEBENGINE:
-            self.ui.webView.load(QUrl(self.repo.macro.url))
-            self.ui.urlBar.setText(self.repo.macro.url)
+            if url:
+                self.ui.webView.load(QUrl(url))
+                self.ui.urlBar.setText(url)
+            else:
+                self.ui.urlBar.setText(
+                    "("
+                    + translate(
+                        "AddonsInstaller", "No URL or wiki page provided by this macro"
+                    )
+                    + ")"
+                )
         else:
-            readme_data = NetworkManager.AM_NETWORK_MANAGER.blocking_get(
-                self.repo.macro.url
-            )
-            text = readme_data.data().decode("utf8")
-            self.ui.textBrowserReadMe.setHtml(text)
+            if url:
+                readme_data = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url)
+                text = readme_data.data().decode("utf8")
+                self.ui.textBrowserReadMe.setHtml(text)
+            else:
+                self.ui.textBrowserReadMe.setHtml(
+                    "("
+                    + translate(
+                        "AddonsInstaller", "No URL or wiki page provided by this macro"
+                    )
+                    + ")"
+                )
 
     def run_javascript(self):
         """Modify the page for a README to optimize for viewing in a smaller window"""
@@ -613,26 +629,32 @@ class PackageDetails(QWidget):
 
     def enable_clicked(self) -> None:
         self.repo.enable()
+        self.repo.set_status(Addon.Status.PENDING_RESTART)
         self.set_disable_button_state()
         self.update_status.emit(self.repo)
         self.ui.labelWarningInfo.show()
         self.ui.labelWarningInfo.setText(
             "<h3>"
-            + translate("AddonsInstaller", "This Addon will be enabled next time you restart FreeCAD.")
+            + translate(
+                "AddonsInstaller",
+                "This Addon will be enabled next time you restart FreeCAD.",
+            )
             + "</h3>"
         )
-        self.ui.labelWarningInfo.setStyleSheet(
-            "color:" + utils.bright_color_string()
-        )
+        self.ui.labelWarningInfo.setStyleSheet("color:" + utils.bright_color_string())
 
     def disable_clicked(self) -> None:
         self.repo.disable()
+        self.repo.set_status(Addon.Status.PENDING_RESTART)
         self.set_disable_button_state()
         self.update_status.emit(self.repo)
         self.ui.labelWarningInfo.show()
         self.ui.labelWarningInfo.setText(
             "<h3>"
-            + translate("AddonsInstaller", "This Addon will be disabled next time you restart FreeCAD.")
+            + translate(
+                "AddonsInstaller",
+                "This Addon will be disabled next time you restart FreeCAD.",
+            )
             + "</h3>"
         )
         self.ui.labelWarningInfo.setStyleSheet(
@@ -655,12 +677,12 @@ class PackageDetails(QWidget):
             self.repo.load_metadata_file(path_to_metadata)
             self.repo.installed_version = self.repo.metadata.Version
         else:
-            self.repo.repo_type = AddonManagerRepo.RepoType.WORKBENCH
+            self.repo.repo_type = Addon.Kind.WORKBENCH
             self.repo.metadata = None
             self.repo.installed_version = None
         self.repo.updated_timestamp = QDateTime.currentDateTime().toSecsSinceEpoch()
         self.repo.branch = name
-        self.repo.set_status(AddonManagerRepo.UpdateStatus.PENDING_RESTART)
+        self.repo.set_status(Addon.Status.PENDING_RESTART)
 
         installed_version_string = "<h3>"
         installed_version_string += translate(

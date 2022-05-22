@@ -32,6 +32,7 @@
 #include <Base/Reader.h>
 #include <Base/Writer.h>
 #include <Base/Quantity.h>
+#include <Base/Stream.h>
 #include <Base/Tools.h>
 
 #include "PropertyStandard.h"
@@ -1373,7 +1374,8 @@ PropertyString::~PropertyString()
 
 void PropertyString::setValue(const char* newLabel)
 {
-    if(!newLabel) return;
+    if(!newLabel)
+        return;
 
     if(_cValue == newLabel)
         return;

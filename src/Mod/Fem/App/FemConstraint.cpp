@@ -25,7 +25,7 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <math.h> //OvG: Required for log10
+# include <cmath> //OvG: Required for log10
 # include <TopoDS.hxx>
 # include <BRepGProp_Face.hxx>
 # include <gp_Vec.hxx>
@@ -86,7 +86,7 @@ PROPERTY_SOURCE(Fem::Constraint, App::DocumentObject)
 
 Constraint::Constraint()
 {
-    ADD_PROPERTY_TYPE(References,(0,0),"Constraint",(App::PropertyType)(App::Prop_None),"Elements where the constraint is applied");
+    ADD_PROPERTY_TYPE(References,(nullptr,nullptr),"Constraint",(App::PropertyType)(App::Prop_None),"Elements where the constraint is applied");
     ADD_PROPERTY_TYPE(NormalDirection,(Base::Vector3d(0,0,1)),"Constraint",App::PropertyType(App::Prop_ReadOnly|App::Prop_Output),"Normal direction pointing outside of solid");
     ADD_PROPERTY_TYPE(Scale,(1),"Base",App::PropertyType(App::Prop_Output),"Scale used for drawing constraints"); //OvG: Add scale parameter inherited by all derived constraints
 

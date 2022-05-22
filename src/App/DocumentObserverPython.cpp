@@ -23,6 +23,7 @@
 
 #include "PreCompiled.h"
 
+#include <CXX/Objects.hxx>
 #include "Application.h"
 #include "Document.h"
 #include "DocumentObject.h"
@@ -42,7 +43,7 @@ void DocumentObserverPython::addObserver(const Py::Object& obj)
 
 void DocumentObserverPython::removeObserver(const Py::Object& obj)
 {
-    DocumentObserverPython* obs=0;
+    DocumentObserverPython* obs=nullptr;
     for (std::vector<DocumentObserverPython*>::iterator it =
         _instances.begin(); it != _instances.end(); ++it) {
         if ((*it)->inst == obj) {

@@ -20,14 +20,12 @@
  *                                                                            *
  ******************************************************************************/
 
-
 #ifndef GUI_TASKVIEW_TaskMultiTransformParameters_H
 #define GUI_TASKVIEW_TaskMultiTransformParameters_H
 
-#include <Gui/Selection.h>
-
 #include "TaskTransformedParameters.h"
 #include "ViewProviderMultiTransform.h"
+
 
 class Ui_TaskMultiTransformParameters;
 class QModelIndex;
@@ -53,7 +51,7 @@ class TaskMultiTransformParameters : public TaskTransformedParameters
     Q_OBJECT
 
 public:
-    TaskMultiTransformParameters(ViewProviderTransformed *TransformedView,QWidget *parent = 0);
+    TaskMultiTransformParameters(ViewProviderTransformed *TransformedView,QWidget *parent = nullptr);
     virtual ~TaskMultiTransformParameters();
 
     const std::vector<App::DocumentObject*> getTransformFeatures(void) const;

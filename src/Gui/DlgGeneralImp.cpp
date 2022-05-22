@@ -25,26 +25,19 @@
 #ifndef _PreComp_
 # include <QApplication>
 # include <QLocale>
-# include <QStyleFactory>
-# include <QTextStream>
-# include <QDesktopServices>
 #endif
 
 #include "DlgGeneralImp.h"
 #include "ui_DlgGeneral.h"
 #include "Action.h"
 #include "Application.h"
-#include "Command.h"
-#include "DockWindowManager.h"
-#include "MainWindow.h"
-#include "PrefWidgets.h"
-#include "Language/Translator.h"
-#include "Gui/PreferencePackManager.h"
-#include "DlgPreferencesImp.h"
-
 #include "DlgCreateNewPreferencePackImp.h"
+#include "DlgPreferencesImp.h"
 #include "DlgPreferencePackManagementImp.h"
 #include "DlgRevertToBackupConfigImp.h"
+#include "MainWindow.h"
+#include "PreferencePackManager.h"
+#include "Language/Translator.h"
 
 
 using namespace Gui::Dialog;
@@ -60,6 +53,7 @@ using namespace Gui::Dialog;
  */
 DlgGeneralImp::DlgGeneralImp( QWidget* parent )
   : PreferencePage(parent)
+  , localeIndex(0)
   , ui(new Ui_DlgGeneral)
 {
     ui->setupUi(this);
@@ -126,6 +120,45 @@ void DlgGeneralImp::setRecentFileSize()
     }
 }
 
+bool DlgGeneralImp::setLanguage()
+{
+    ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
+    QString lang = QLocale::languageToString(QLocale().language());
+    QByteArray language = hGrp->GetASCII("Language", (const char*)lang.toLatin1()).c_str();
+    QByteArray current = ui->Languages->itemData(ui->Languages->currentIndex()).toByteArray();
+    if (current != language) {
+        hGrp->SetASCII("Language", current.constData());
+        Translator::instance()->activateLanguage(current.constData());
+        return true;
+    }
+    return false;
+}
+
+void DlgGeneralImp::setNumberLocale(bool force/* = false*/)
+{
+    int localeFormat = ui->UseLocaleFormatting->currentIndex();
+
+    // Only make the change if locale setting has changed or if forced
+    // Except if format is "OS" where we don't want to run setLocale
+    if (localeIndex == localeFormat && (!force || localeFormat == 0))
+        return;
+
+    if (localeFormat == 0) {
+        Translator::instance()->setLocale(); // Defaults to system locale
+    }
+    else if (localeFormat == 1) {
+        QByteArray current = ui->Languages->itemData(ui->Languages->currentIndex()).toByteArray();
+        Translator::instance()->setLocale(current.constData());
+    }
+    else if (localeFormat == 2) {
+        Translator::instance()->setLocale("C");
+    }
+    else {
+        return; // Prevent localeIndex updating if localeFormat is out of range
+    }
+    localeIndex = localeFormat;
+}
+
 void DlgGeneralImp::saveSettings()
 {
     int index = ui->AutoloadModuleCombo->currentIndex();
@@ -135,20 +168,17 @@ void DlgGeneralImp::saveSettings()
                           SetASCII("AutoloadModule", startWbName.toLatin1());
 
     ui->SubstituteDecimal->onSave();
+    ui->UseLocaleFormatting->onSave();
     ui->RecentFiles->onSave();
     ui->EnableCursorBlinking->onSave();
     ui->SplashScreen->onSave();
 
     setRecentFileSize();
-    ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
-    QString lang = QLocale::languageToString(QLocale().language());
-    QByteArray language = hGrp->GetASCII("Language", (const char*)lang.toLatin1()).c_str();
-    QByteArray current = ui->Languages->itemData(ui->Languages->currentIndex()).toByteArray();
-    if (current != language) {
-        hGrp->SetASCII("Language", current.constData());
-        Translator::instance()->activateLanguage(current.constData());
-    }
+    bool force = setLanguage();
+    // In case type is "Selected language", we need to force locale change
+    setNumberLocale(force);
 
+    ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
     QVariant size = ui->toolbarIconSize->itemData(ui->toolbarIconSize->currentIndex());
     int pixel = size.toInt();
     hGrp->SetInt("ToolbarIconSize", pixel);
@@ -190,14 +220,17 @@ void DlgGeneralImp::loadSettings()
     ui->AutoloadModuleCombo->setCurrentIndex(ui->AutoloadModuleCombo->findData(startWbName));
 
     ui->SubstituteDecimal->onRestore();
+    ui->UseLocaleFormatting->onRestore();
     ui->RecentFiles->onRestore();
     ui->EnableCursorBlinking->onRestore();
     ui->SplashScreen->onRestore();
 
     // search for the language files
     ParameterGrp::handle hGrp = WindowParameter::getDefaultParameter()->GetGroup("General");
-    QString langToStr = QLocale::languageToString(QLocale().language());
-    QByteArray language = hGrp->GetASCII("Language", langToStr.toLatin1()).c_str();
+    auto langToStr = Translator::instance()->activeLanguage();
+    QByteArray language = hGrp->GetASCII("Language", langToStr.c_str()).c_str();
+
+    localeIndex = ui->UseLocaleFormatting->currentIndex();
 
     int index = 1;
     TStringMap list = Translator::instance()->supportedLocales();
@@ -306,7 +339,9 @@ void DlgGeneralImp::loadSettings()
 void DlgGeneralImp::changeEvent(QEvent *e)
 {
     if (e->type() == QEvent::LanguageChange) {
+        int index = ui->UseLocaleFormatting->currentIndex();
         ui->retranslateUi(this);
+        ui->UseLocaleFormatting->setCurrentIndex(index);
     }
     else {
         QWidget::changeEvent(e);

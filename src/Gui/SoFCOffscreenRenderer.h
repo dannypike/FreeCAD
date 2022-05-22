@@ -20,16 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef GUI_SOFCOFFSCREENRENDERER_H
 #define GUI_SOFCOFFSCREENRENDERER_H
 
-#include <Inventor/SoOffscreenRenderer.h>
-#include <Inventor/SbMatrix.h>
 #include <Inventor/SbColor4f.h>
+#include <Inventor/SbMatrix.h>
+#include <Inventor/SoOffscreenRenderer.h>
+
 #include <QImage>
 #include <QStringList>
 #include <QtOpenGL.h>
+
 
 namespace Gui {
 
@@ -120,9 +121,6 @@ public:
     void setInternalTextureFormat(GLenum internalTextureFormat);
     GLenum internalTextureFormat() const;
 
-    void setPbufferEnable(SbBool enable);
-    SbBool getPbufferEnable(void) const;
-
     SbBool render(SoNode * scene);
     SbBool render(SoPath * scene);
 
@@ -130,7 +128,7 @@ public:
     QStringList getWriteImageFiletypeInfo() const;
 
 private:
-    void init(const SbViewportRegion & vpr, SoGLRenderAction * glrenderaction = NULL);
+    void init(const SbViewportRegion & vpr, SoGLRenderAction * glrenderaction = nullptr);
     static void pre_render_cb(void * userdata, SoGLRenderAction * action);
     SbBool renderFromBase(SoBase * base);
     void makeFrameBuffer(int width, int height, int samples);
@@ -143,7 +141,6 @@ private:
     SbColor4f backgroundopaque;
     SoGLRenderAction * renderaction;
     SbBool didallocation;
-    SbBool pbuffer;
     int numSamples;
     GLenum texFormat;
     QImage glImage;

@@ -62,7 +62,7 @@ void TimeInfo::setCurrent()
 {
 #if defined (FC_OS_BSD) || defined(FC_OS_LINUX) || defined(__MINGW32__)
     struct timeval t;
-    gettimeofday(&t, NULL);
+    gettimeofday(&t, nullptr);
     timebuffer.time = t.tv_sec;
     timebuffer.millitm = t.tv_usec / 1000;
 #elif defined(FC_OS_WIN32)
@@ -101,8 +101,7 @@ float TimeInfo::diffTimeF(const TimeInfo &timeStart,const TimeInfo &timeEnd )
 TimeInfo TimeInfo::null()
 {
     TimeInfo ti;
-    ti.timebuffer.time = 0;
-    ti.timebuffer.millitm = 0;
+    ti.timebuffer = {};
     return ti;
 }
 

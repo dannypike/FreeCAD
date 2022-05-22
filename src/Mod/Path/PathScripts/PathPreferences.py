@@ -24,9 +24,15 @@ import FreeCAD
 import glob
 import os
 import PathScripts.PathLog as PathLog
+from PySide.QtGui import QMessageBox
 
-# PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
-# PathLog.trackModule()
+if False:
+    PathLog.setLevel(PathLog.Level.DEBUG, PathLog.thisModule())
+    PathLog.trackModule(PathLog.thisModule())
+else:
+    PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
+
+translate = FreeCAD.Qt.translate
 
 DefaultFilePath = "DefaultFilePath"
 DefaultJobTemplate = "DefaultJobTemplate"
@@ -179,6 +185,16 @@ def toolsStoreAbsolutePaths():
 
 def setToolsSettings(legacy, relative):
     pref = preferences()
+    if legacy:
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText(
+            translate(
+                "Path",
+                "Legacy tools are deprecated. They will be removed after version 0.20",
+            )
+        )
+        msgBox.exec_()
     pref.SetBool(UseLegacyTools, legacy)
     pref.SetBool(UseAbsoluteToolPaths, relative)
     # pref.SetBool(OpenLastLibrary, lastlibrary)
@@ -208,7 +224,7 @@ def postProcessorBlacklist():
     blacklist = pref.GetString(PostProcessorBlacklist, "")
     if not blacklist:
         return []
-    return eval(blacklist)  # pylint: disable=eval-used
+    return eval(blacklist)
 
 
 def setPostProcessorDefaults(processor, args, blacklist):

@@ -20,18 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <cfloat>
+# include <boost/algorithm/string/predicate.hpp>
 #endif
 
-#include <boost/algorithm/string/predicate.hpp>
-
-#include "PropertyModel.h"
 #include "PropertyItem.h"
+#include "PropertyModel.h"
 #include "PropertyView.h"
+
 
 using namespace Gui;
 using namespace Gui::PropertyEditor;
@@ -247,7 +245,7 @@ static PropertyItem *createPropertyItem(App::Property *prop)
 PropertyModel::GroupInfo &PropertyModel::getGroupInfo(App::Property *prop)
 {
     const char* group = prop->getGroup();
-    bool isEmpty = (group == 0 || group[0] == '\0');
+    bool isEmpty = (group == nullptr || group[0] == '\0');
     QString groupName = QString::fromLatin1(
             isEmpty ? QT_TRANSLATE_NOOP("App::Property", "Base") : group);
 
@@ -336,6 +334,8 @@ void PropertyModel::buildUp(const PropertyModel::PropertyList& props)
             // TODO: is it necessary to make sure the item has no pending commit?
             item->setPropertyData(jt->second);
         }
+        else
+            item->updateData();
     }
 
     // Third step, signal item insertion and movement.

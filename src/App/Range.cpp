@@ -42,9 +42,9 @@ Range::Range(const char * range)
     std::string from;
     std::string to;
 
-    assert(range != NULL);
+    assert(range != nullptr);
 
-    if (strchr(range, ':') == NULL) {
+    if (strchr(range, ':') == nullptr) {
         from = range;
         to = range;
     }
@@ -207,7 +207,7 @@ int App::validColumn(const std::string &colstr)
 
 App::CellAddress App::stringToAddress(const char * strAddress, bool silent)
 {
-    assert(strAddress != 0);
+    assert(strAddress != nullptr);
 
     static boost::regex e("(\\$?[A-Z]{1,2})(\\$?[0-9]{1,5})");
     boost::cmatch cm;
@@ -247,13 +247,13 @@ std::string App::CellAddress::toString(Cell cell) const
         if (_absCol && flags.testFlag(Cell::Absolute))
             s << '$';
         if (col() < 26) {
-            s << (char)('A' + col());
+            s << static_cast<char>('A' + col());
         }
         else {
             int colnum = col() - 26;
 
-            s << (char)('A' + (colnum / 26));
-            s << (char)('A' + (colnum % 26));
+            s << static_cast<char>('A' + (colnum / 26));
+            s << static_cast<char>('A' + (colnum % 26));
         }
     }
 

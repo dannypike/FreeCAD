@@ -22,7 +22,13 @@
 
 import FreeCADGui
 import PathScripts.PathPreferences as PathPreferences
-import PySide
+import PathScripts.PathLog as PathLog
+
+if False:
+    PathLog.setLevel(PathLog.Level.DEBUG, PathLog.thisModule())
+    PathLog.trackModule(PathLog.thisModule())
+else:
+    PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
 
 
 class AdvancedPreferencesPage:
@@ -42,6 +48,7 @@ class AdvancedPreferencesPage:
         )
 
     def loadSettings(self):
+        PathLog.track()
         self.form.WarningSuppressAllSpeeds.setChecked(
             PathPreferences.suppressAllSpeedsWarning()
         )

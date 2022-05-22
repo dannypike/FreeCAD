@@ -28,6 +28,7 @@
 #include <App/DocumentObserver.h>
 #include <App/FeaturePython.h>
 #include <Mod/Part/App/DatumFeature.h>
+#include <Mod/PartDesign/PartDesignGlobal.h>
 
 namespace PartDesign
 {
@@ -98,6 +99,12 @@ public:
     App::PropertyXLink Context;
     App::PropertyInteger _Version;
     App::PropertyEnumeration BindCopyOnChange;
+    App::PropertyBool Refine;
+    App::PropertyFloat Offset;
+    App::PropertyEnumeration OffsetJoinType;
+    App::PropertyBool OffsetFill;
+    App::PropertyBool OffsetOpenResult;
+    App::PropertyBool OffsetIntersection;
 
     enum UpdateOption {
         UpdateNone = 0,
@@ -112,8 +119,8 @@ public:
 
     virtual bool canLinkProperties() const override {return false;}
 
-    virtual App::DocumentObject *getSubObject(const char *subname, PyObject **pyObj=0, 
-            Base::Matrix4D *mat=0, bool transform=true, int depth=0) const override;
+    virtual App::DocumentObject *getSubObject(const char *subname, PyObject **pyObj=nullptr, 
+            Base::Matrix4D *mat=nullptr, bool transform=true, int depth=0) const override;
 
 protected:
     virtual App::DocumentObjectExecReturn* execute(void) override;
@@ -135,7 +142,7 @@ protected:
 
     typedef boost::signals2::scoped_connection Connection;
     Connection connRecomputedObj;
-    App::Document *contextDoc = 0;
+    App::Document *contextDoc = nullptr;
 
     std::vector<Connection> copyOnChangeConns;
     bool hasCopyOnChange = true;

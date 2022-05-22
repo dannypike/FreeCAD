@@ -20,74 +20,56 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <QAbstractTextDocumentLayout>
 # include <QApplication>
-# include <QClipboard>
-# include <QDateTime>
-# include <QHBoxLayout>
-# include <QMessageBox>
-# include <QNetworkRequest>
-# include <QPainter>
-# include <QPrinter>
-# include <QPrintDialog>
-# include <QScrollBar>
-# include <QMouseEvent>
-# include <QStatusBar>
-# include <QTextBlock>
-# include <QTextCodec>
-# include <QTextStream>
-# include <QTimer>
-# include <QFileInfo>
 # include <QDesktopServices>
-# include <QMenu>
-# include <QDesktopWidget>
-# include <QSignalMapper>
-# include <QPointer>
-# include <QDir>
+# include <QFileInfo>
+# include <QLatin1String>
 # include <QLineEdit>
+# include <QMenu>
+# include <QMessageBox>
+# include <QMouseEvent>
+# include <QNetworkRequest>
+# include <QRegExp>
+# include <QScreen>
+# include <QSignalMapper>
+# include <QStatusBar>
 #endif
 
-
 #if defined(QTWEBENGINE)
-# include <QWebEnginePage>
-# include <QWebEngineView>
-# include <QWebEngineSettings>
-# include <QWebEngineProfile>
 # include <QWebEngineContextMenuData>
-# include <QWebEngineUrlRequestInterceptor>
+# include <QWebEnginePage>
+# include <QWebEngineProfile>
+# include <QWebEngineSettings>
 # include <QWebEngineUrlRequestInfo>
+# include <QWebEngineUrlRequestInterceptor>
+# include <QWebEngineView>
 #elif defined(QTWEBKIT)
 # include <QWebFrame>
-# include <QWebView>
-# include <QWebSettings>
 # include <QNetworkAccessManager>
+# include <QWebSettings>
+# include <QWebView>
 using QWebEngineView = QWebView;
 using QWebEnginePage = QWebPage;
 #endif
 
-#include <QScreen>
-
-#include <QLatin1String>
-#include <QRegExp>
-#include "BrowserView.h"
-#include "CookieJar.h"
-#include <Gui/Application.h>
-#include <Gui/MainWindow.h>
-#include <Gui/MDIViewPy.h>
-#include <Gui/ProgressBar.h>
-#include <Gui/Command.h>
-#include <Gui/OnlineDocumentation.h>
-#include <Gui/DownloadManager.h>
-#include <Gui/TextDocumentEditorView.h>
-
+#include <App/Document.h>
 #include <Base/Parameter.h>
 #include <Base/Exception.h>
 #include <Base/Tools.h>
-#include <CXX/Extensions.hxx>
+#include <Gui/Application.h>
+#include <Gui/Command.h>
+#include <Gui/DownloadManager.h>
+#include <Gui/MainWindow.h>
+#include <Gui/MDIViewPy.h>
+#include <Gui/ProgressBar.h>
+#include <Gui/TextDocumentEditorView.h>
+
+#include "BrowserView.h"
+#include "CookieJar.h"
+
 
 using namespace WebGui;
 using namespace Gui;
@@ -447,7 +429,7 @@ TYPESYSTEM_SOURCE_ABSTRACT(WebGui::BrowserView, Gui::MDIView)
  *  name 'name'.
  */
 BrowserView::BrowserView(QWidget* parent)
-    : MDIView(0,parent,Qt::WindowFlags()),
+    : MDIView(nullptr,parent,Qt::WindowFlags()),
       WindowParameter( "Browser" ),
       isLoading(false)
 {
@@ -781,7 +763,10 @@ void BrowserView::onLoadFinished(bool ok)
     QProgressBar* bar = SequencerBar::instance()->getProgressBar();
     bar->setValue(100);
     bar->hide();
-    getMainWindow()->showMessage(QString());
+    Gui::MainWindow* win = Gui::getMainWindow();
+    if (win) {
+        win->showMessage(QString());
+    }
     isLoading = false;
 }
 
@@ -852,11 +837,16 @@ bool BrowserView::onHasMsg(const char* pMsg) const
         return view->page()->action(QWebEnginePage::Back)->isEnabled();
     if (strcmp(pMsg,"Next")==0)
         return view->page()->action(QWebEnginePage::Forward)->isEnabled();
-    if (strcmp(pMsg,"Refresh")==0) return !isLoading;
-    if (strcmp(pMsg,"Stop")==0) return isLoading;
-    if (strcmp(pMsg,"ZoomIn")==0) return true;
-    if (strcmp(pMsg,"ZoomOut")==0) return true;
-    if (strcmp(pMsg,"SetURL")==0) return true;
+    if (strcmp(pMsg,"Refresh")==0)
+        return !isLoading;
+    if (strcmp(pMsg,"Stop")==0)
+        return isLoading;
+    if (strcmp(pMsg,"ZoomIn")==0)
+        return true;
+    if (strcmp(pMsg,"ZoomOut")==0)
+        return true;
+    if (strcmp(pMsg,"SetURL")==0)
+        return true;
 
     return false;
 }

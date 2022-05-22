@@ -146,8 +146,9 @@ SET(PathScripts_SRCS
 
 SET(Generator_SRCS
     Generators/drill_generator.py
-    Generators/rotation_generator.py
     Generators/helix_generator.py
+    Generators/rotation_generator.py
+    Generators/threadmilling_generator.py
     Generators/toolchange_generator.py
 )
 
@@ -155,19 +156,25 @@ SET(PathScripts_post_SRCS
     PathScripts/post/__init__.py
     PathScripts/post/centroid_post.py
     PathScripts/post/comparams_post.py
-    PathScripts/post/dynapath_post.py
     PathScripts/post/dxf_post.py
+    PathScripts/post/dynapath_post.py
     PathScripts/post/example_pre.py
+    PathScripts/post/fablin_post.py
+    PathScripts/post/fanuc_post.py
     PathScripts/post/gcode_pre.py
     PathScripts/post/grbl_post.py
+    PathScripts/post/heidenhain_post.py
     PathScripts/post/jtech_post.py
+    PathScripts/post/KineticNCBeamicon2_post.py
     PathScripts/post/linuxcnc_post.py
     PathScripts/post/mach3_mach4_post.py
+    PathScripts/post/marlin_post.py
     PathScripts/post/nccad_post.py
     PathScripts/post/opensbp_post.py
     PathScripts/post/opensbp_pre.py
     PathScripts/post/philips_post.py
     PathScripts/post/rml_post.py
+    PathScripts/post/rrf_post.py
     PathScripts/post/slic3r_pre.py
     PathScripts/post/smoothie_post.py
     PathScripts/post/uccnc_post.py
@@ -242,6 +249,7 @@ SET(PathTests_SRCS
     PathTests/TestPathStock.py
     PathTests/TestPathToolChangeGenerator.py
     PathTests/TestPathThreadMilling.py
+    PathTests/TestPathThreadMillingGenerator.py
     PathTests/TestPathTool.py
     PathTests/TestPathToolBit.py
     PathTests/TestPathToolController.py
@@ -270,8 +278,13 @@ SET(Path_Images
 )
 
 SET(PathData_Threads
-    Data/Threads/metric-internal.csv
-    Data/Threads/imperial-internal.csv
+    Data/Threads/imperial-external-2A.csv
+    Data/Threads/imperial-external-3A.csv
+    Data/Threads/imperial-internal-2B.csv
+    Data/Threads/imperial-internal-3B.csv
+    Data/Threads/metric-external-4G6G.csv
+    Data/Threads/metric-external-6G.csv
+    Data/Threads/metric-internal-6H.csv
 )
 
 SET(Path_Data

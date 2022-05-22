@@ -20,14 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef GUI_TASKVIEW_TaskPocketParameters_H
 #define GUI_TASKVIEW_TaskPocketParameters_H
 
-#include <Gui/TaskView/TaskView.h>
-
 #include "TaskExtrudeParameters.h"
 #include "ViewProviderPocket.h"
+
 
 namespace App {
 class Property;
@@ -45,7 +43,7 @@ class TaskPocketParameters : public TaskExtrudeParameters
     Q_OBJECT
 
 public:
-    TaskPocketParameters(ViewProviderPocket *PocketView, QWidget *parent = 0, bool newObj=false);
+    TaskPocketParameters(ViewProviderPocket *PocketView, QWidget *parent = nullptr, bool newObj=false);
     ~TaskPocketParameters();
 
     virtual void apply() override;

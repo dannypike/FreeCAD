@@ -28,6 +28,7 @@
 #endif
 
 #include <Base/UnitsApi.h>
+#include <App/Document.h>
 #include <Gui/Command.h>
 #include <Mod/PartDesign/App/FeatureExtrude.h>
 
@@ -43,6 +44,7 @@ using namespace Gui;
 TaskExtrudeParameters::TaskExtrudeParameters(ViewProviderSketchBased *SketchBasedView, QWidget *parent,
                                              const std::string& pixmapname, const QString& parname)
     : TaskSketchBasedParameters(SketchBasedView, parent, pixmapname, parname)
+    , propReferenceAxis(nullptr)
     , ui(new Ui_TaskPadPocketParameters)
 {
     // we need a separate container widget to add all controls to
@@ -360,7 +362,7 @@ void TaskExtrudeParameters::fillDirectionCombo()
             addAxisToCombo(pcFeat->Profile.getValue(), std::string(), tr("Face normal"), false);
 
         // add the other entries
-        addAxisToCombo(0, std::string(), tr("Select reference..."));
+        addAxisToCombo(nullptr, std::string(), tr("Select reference..."));
 
         // we start with the sketch normal as proposal for the custom direction
         if (pcSketch)

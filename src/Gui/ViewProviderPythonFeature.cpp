@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
@@ -30,7 +29,6 @@
 # include <QFileInfo>
 # include <QMenu>
 # include <QPixmap>
-# include <boost_bind_bind.hpp>
 # include <Inventor/SoPickedPoint.h>
 # include <Inventor/details/SoDetail.h>
 #endif
@@ -48,7 +46,7 @@
 #include "ViewProviderDocumentObjectPy.h"
 
 
-FC_LOG_LEVEL_INIT("ViewProviderPythonFeature",true,true)
+FC_LOG_LEVEL_INIT("ViewProviderPythonFeature", true, true)
 
 
 using namespace Gui;
@@ -285,7 +283,12 @@ ViewProviderPythonFeatureImp::~ViewProviderPythonFeatureImp()
 #undef FC_PY_ELEMENT
 #define FC_PY_ELEMENT(_name) py_##_name = Py::None();
 
-    FC_PY_VIEW_OBJECT
+    try {
+        FC_PY_VIEW_OBJECT
+    }
+    catch (Py::Exception& e) {
+        e.clear();
+    }
 }
 
 void ViewProviderPythonFeatureImp::init(PyObject *pyobj) {
@@ -424,7 +427,7 @@ bool ViewProviderPythonFeatureImp::getElement(const SoDetail *det, std::string &
     // Run the onChanged method of the proxy object.
     Base::PyGILStateLocker lock;
     try {
-        PyObject* pivy = 0;
+        PyObject* pivy = nullptr;
         // Note: As there is no ref'counting mechanism for the SoDetail class we must
         // pass '0' as the last parameter so that the Python object does not 'own'
         // the detail object.
@@ -457,12 +460,13 @@ ViewProviderPythonFeatureImp::getElementPicked(const SoPickedPoint *pp, std::str
 
     Base::PyGILStateLocker lock;
     try {
-        PyObject* pivy = 0;
+        PyObject* pivy = nullptr;
         pivy = Base::Interpreter().createSWIGPointerObj("pivy.coin", "SoPickedPoint *", (void*)pp, 0);
         Py::Tuple args(1);
         args.setItem(0, Py::Object(pivy, true));
         Py::Object ret(Base::pyCall(py_getElementPicked.ptr(),args.ptr()));
-        if(!ret.isString()) return Rejected;
+        if(!ret.isString())
+            return Rejected;
         subname = ret.as_string();
         return Accepted;
     }
@@ -491,10 +495,10 @@ bool ViewProviderPythonFeatureImp::getDetail(const char* name, SoDetail *&det) c
         Py::Tuple args(1);
         args.setItem(0, Py::String(name));
         Py::Object pydet(Base::pyCall(py_getDetail.ptr(),args.ptr()));
-        void* ptr = 0;
+        void* ptr = nullptr;
         Base::Interpreter().convertSWIGPointerObj("pivy.coin", "SoDetail *", pydet.ptr(), &ptr, 0);
         SoDetail* detail = reinterpret_cast<SoDetail*>(ptr);
-        det = detail ? detail->copy() : 0;
+        det = detail ? detail->copy() : nullptr;
         return true;
     }
     catch (const Base::Exception& e) {
@@ -520,7 +524,7 @@ ViewProviderPythonFeatureImp::ValueT ViewProviderPythonFeatureImp::getDetailPath
     Base::PyGILStateLocker lock;
     auto length = path->getLength();
     try {
-        PyObject* pivy = 0;
+        PyObject* pivy = nullptr;
         pivy = Base::Interpreter().createSWIGPointerObj("pivy.coin", "SoFullPath *", (void*)path, 1);
         path->ref();
         Py::Tuple args(3);
@@ -532,10 +536,10 @@ ViewProviderPythonFeatureImp::ValueT ViewProviderPythonFeatureImp::getDetailPath
             return Rejected;
         if(pyDet.isBoolean())
             return Accepted;
-        void* ptr = 0;
+        void* ptr = nullptr;
         Base::Interpreter().convertSWIGPointerObj("pivy.coin", "SoDetail *", pyDet.ptr(), &ptr, 0);
         SoDetail* detail = reinterpret_cast<SoDetail*>(ptr);
-        det = detail ? detail->copy() : 0;
+        det = detail ? detail->copy() : nullptr;
         if(det)
             return Accepted;
         delete det;
@@ -1418,6 +1422,27 @@ bool ViewProviderPythonFeatureImp::getLinkedViewProvider(
     return true;
 }
 
+bool ViewProviderPythonFeatureImp::editProperty(const char *name)
+{
+    _FC_PY_CALL_CHECK(editProperty,return false);
+    Base::PyGILStateLocker lock;
+    try {
+        Py::Tuple args(1);
+        args.setItem(0, Py::String(name));
+        Py::Object ret(Base::pyCall(py_editProperty.ptr(),args.ptr()));
+        return ret.isTrue();
+    }
+    catch (Py::Exception&) {
+        if (PyErr_ExceptionMatches(PyExc_NotImplementedError)) {
+            PyErr_Clear();
+            return false;
+        }
+
+        Base::PyException e; // extract the Python error text
+        e.ReportException();
+    }
+    return false;
+}
 
 // ---------------------------------------------------------
 

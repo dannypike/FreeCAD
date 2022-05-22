@@ -69,10 +69,10 @@ PROPERTY_SOURCE(PartDesign::ProfileBased, PartDesign::FeatureAddSub)
 
 ProfileBased::ProfileBased()
 {
-    ADD_PROPERTY_TYPE(Profile, (0), "SketchBased", App::Prop_None, "Reference to sketch");
+    ADD_PROPERTY_TYPE(Profile, (nullptr), "SketchBased", App::Prop_None, "Reference to sketch");
     ADD_PROPERTY_TYPE(Midplane, (0), "SketchBased", App::Prop_None, "Extrude symmetric to sketch face");
     ADD_PROPERTY_TYPE(Reversed, (0), "SketchBased", App::Prop_None, "Reverse extrusion direction");
-    ADD_PROPERTY_TYPE(UpToFace, (0), "SketchBased", (App::PropertyType)(App::Prop_None), "Face where feature will end");
+    ADD_PROPERTY_TYPE(UpToFace, (nullptr), "SketchBased", (App::PropertyType)(App::Prop_None), "Face where feature will end");
     ADD_PROPERTY_TYPE(AllowMultiFace, (false), "SketchBased", App::Prop_None, "Allow multiple faces in profile");
 }
 
@@ -167,7 +167,7 @@ Part::Feature* ProfileBased::getVerifiedObject(bool silent) const {
 Part::TopoShape ProfileBased::getProfileShape() const
 {
     auto shape = getTopoShape(Profile.getValue());
-    if (!shape.isNull() && Profile.getSubValues().size()) {
+    if (!shape.isNull() && !Profile.getSubValues().empty()) {
         std::vector<Part::TopoShape> shapes;
         for (auto& sub : Profile.getSubValues(true))
             shapes.emplace_back(shape.getSubShape(sub.c_str()));
@@ -196,7 +196,7 @@ TopoDS_Shape ProfileBased::getVerifiedFace(bool silent) const {
                     if (!shape.hasSubShape(TopAbs_WIRE))
                         shape = shape.makeWires();
                     if (shape.hasSubShape(TopAbs_WIRE))
-                        shape = shape.makeFace(0, "Part::FaceMakerBullseye");
+                        shape = shape.makeFace(nullptr, "Part::FaceMakerBullseye");
                     else
                         err = "Cannot make face from profile";
                 }
@@ -389,7 +389,7 @@ void ProfileBased::onChanged(const App::Property* prop)
 {
     if (prop == &Profile) {
         // if attached to a sketch then mark it as read-only
-        this->Placement.setStatus(App::Property::ReadOnly, Profile.getValue() != 0);
+        this->Placement.setStatus(App::Property::ReadOnly, Profile.getValue() != nullptr);
     }
 
     FeatureAddSub::onChanged(prop);
@@ -402,7 +402,7 @@ void ProfileBased::getUpToFaceFromLinkSub(TopoDS_Face& upToFace,
     App::DocumentObject* ref = refFace.getValue();
     std::vector<std::string> subStrings = refFace.getSubValues();
 
-    if (ref == NULL)
+    if (ref == nullptr)
         throw Base::ValueError("SketchBased: Up to face: No face selected");
 
     if (ref->getTypeId().isDerivedFrom(App::Plane::getClassTypeId())) {
@@ -918,7 +918,7 @@ bool ProfileBased::isParallelPlane(const TopoDS_Shape & s1, const TopoDS_Shape &
     return false;
 }
 
-double ProfileBased::getReversedAngle(const Base::Vector3d & b, const Base::Vector3d & v)
+double ProfileBased::getReversedAngle(const Base::Vector3d & b, const Base::Vector3d & v) const
 {
     try {
         Part::Feature* obj = getVerifiedObject();
@@ -947,7 +947,7 @@ double ProfileBased::getReversedAngle(const Base::Vector3d & b, const Base::Vect
 }
 
 void ProfileBased::getAxis(const App::DocumentObject * pcReferenceAxis, const std::vector<std::string> &subReferenceAxis,
-                           Base::Vector3d& base, Base::Vector3d& dir, ProfileBased::ForbiddenAxis checkAxis)
+                           Base::Vector3d& base, Base::Vector3d& dir, ProfileBased::ForbiddenAxis checkAxis) const
 {
     auto verifyAxisFunc = [](ProfileBased::ForbiddenAxis checkAxis, const gp_Pln& sketchplane, const gp_Dir& dir) {
         switch (checkAxis) {
@@ -1141,11 +1141,11 @@ void ProfileBased::handleChangedPropertyName(Base::XMLReader & reader, const cha
 
         if (name != "") {
             App::Document* document = getDocument();
-            DocumentObject* object = document ? document->getObject(name.c_str()) : 0;
+            DocumentObject* object = document ? document->getObject(name.c_str()) : nullptr;
             Profile.setValue(object, vec);
         }
         else {
-            Profile.setValue(0, vec);
+            Profile.setValue(nullptr, vec);
         }
     }
     else {

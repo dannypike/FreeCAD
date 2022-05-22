@@ -26,14 +26,12 @@
 #include <cmath>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
-
-#endif // #ifndef _PreComp_
-
-#include <BRepBuilderAPI_MakeEdge.hxx>
-
 #include <QButtonGroup>
 #include <QStatusBar>
 #include <QGraphicsScene>
+#endif // #ifndef _PreComp_
+
+#include <BRepBuilderAPI_MakeEdge.hxx>
 
 #include <Base/Console.h>
 #include <Base/Tools.h>
@@ -58,7 +56,6 @@
 
 #include "ui_TaskSelectLineAttributes.h"
 #include "TaskSelectLineAttributes.h"
-#include "DrawGuiStd.h"
 #include "MDIViewPage.h"
 #include "PreferencesGui.h"
 #include "QGVPage.h"
@@ -381,7 +378,7 @@ TaskDlgSelectLineAttributes::TaskDlgSelectLineAttributes(lineAttributes * ptActi
 {
     widget  = new TaskSelectLineAttributes(ptActiveAttributes);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("TechDraw_ExtensionSelectLineAttributes"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

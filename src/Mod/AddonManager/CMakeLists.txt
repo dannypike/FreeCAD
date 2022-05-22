@@ -3,26 +3,29 @@ IF (BUILD_GUI)
 ENDIF (BUILD_GUI)
 
 SET(AddonManager_SRCS
-    Init.py
-    InitGui.py
+    add_toolbar_button_dialog.ui
+    Addon.py
     AddonManager.py
-    AddonManagerRepo.py
+    AddonManager.ui
     addonmanager_macro.py
     addonmanager_utilities.py
     addonmanager_workers.py
-    AddonManager.ui
     AddonManagerOptions.ui
     ALLOWED_PYTHON_PACKAGES.txt
     change_branch.py
     change_branch.ui
-    first_run.ui
     compact_view.py
     dependency_resolution_dialog.ui
     expanded_view.py
-    NetworkManager.py
-    package_list.py
-    package_details.py
+    first_run.ui
+    Init.py
+    InitGui.py
+    install_to_toolbar.py
     loading.html
+    NetworkManager.py
+    package_details.py
+    package_list.py
+    select_toolbar_dialog.ui
     TestAddonManagerApp.py
 )
 IF (BUILD_GUI)
@@ -38,6 +41,8 @@ SET(AddonManagerTests_SRCS
 
 SET(AddonManagerTestsApp_SRCS
     AddonManagerTest/app/__init__.py
+    AddonManagerTest/app/test_addon.py
+    AddonManagerTest/app/test_macro.py
     AddonManagerTest/app/test_utilities.py
 )
 
@@ -49,8 +54,17 @@ SET(AddonManagerTestsGui_SRCS
 SET(AddonManagerTestsFiles_SRCS
     AddonManagerTest/data/__init__.py
     AddonManagerTest/data/bad_macro_metadata.FCStd
+    AddonManagerTest/data/combination.xml
+    AddonManagerTest/data/depends_on_all_workbenches.xml
+    AddonManagerTest/data/DoNothing.FCMacro
     AddonManagerTest/data/good_macro_metadata.FCStd
+    AddonManagerTest/data/good_package.xml
+    AddonManagerTest/data/macro_only.xml
+    AddonManagerTest/data/macro_template.FCStd
     AddonManagerTest/data/missing_macro_metadata.FCStd
+    AddonManagerTest/data/prefpack_only.xml
+    AddonManagerTest/data/test_version_detection.xml
+    AddonManagerTest/data/workbench_only.xml
 )
 
 SET(AddonManagerTests_ALL

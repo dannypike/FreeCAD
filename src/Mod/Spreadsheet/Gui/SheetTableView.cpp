@@ -37,6 +37,9 @@
 #include <App/Application.h>
 #include <App/AutoTransaction.h>
 #include <App/Document.h>
+#include <Base/Reader.h>
+#include <Base/Stream.h>
+#include <Base/Writer.h>
 #include <Gui/CommandT.h>
 #include <Gui/Application.h>
 #include <Gui/MainWindow.h>
@@ -106,7 +109,7 @@ static std::pair<int, int> selectedMinMaxColumns(QModelIndexList list)
 
 SheetTableView::SheetTableView(QWidget *parent)
     : QTableView(parent)
-    , sheet(0)
+    , sheet(nullptr)
     , tabCounter(0)
 {
     setHorizontalHeader(new SheetViewHeader(this,Qt::Horizontal));
@@ -271,9 +274,14 @@ std::vector<Range> SheetTableView::selectedRanges() const
     return result;
 }
 
+QModelIndexList SheetTableView::selectedIndexesRaw() const
+{
+    return selectedIndexes();
+}
+
 void SheetTableView::insertRows()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
 
     QModelIndexList rows = selectionModel()->selectedRows();
     std::vector<int> sortedRows;
@@ -310,7 +318,7 @@ void SheetTableView::insertRows()
 
 void SheetTableView::insertRowsAfter()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
     const auto rows = selectionModel()->selectedRows();
     const auto & [min, max] = selectedMinMaxRows(rows);
     assert(max - min == rows.size() - 1);
@@ -324,7 +332,7 @@ void SheetTableView::insertRowsAfter()
 
 void SheetTableView::removeRows()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
 
     QModelIndexList rows = selectionModel()->selectedRows();
     std::vector<int> sortedRows;
@@ -345,7 +353,7 @@ void SheetTableView::removeRows()
 
 void SheetTableView::insertColumns()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
 
     QModelIndexList cols = selectionModel()->selectedColumns();
     std::vector<int> sortedColumns;
@@ -383,7 +391,7 @@ void SheetTableView::insertColumns()
 
 void SheetTableView::insertColumnsAfter()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
     const auto columns = selectionModel()->selectedColumns();
     const auto& [min, max] = selectedMinMaxColumns(columns);
     assert(max - min == columns.size() - 1);
@@ -397,7 +405,7 @@ void SheetTableView::insertColumnsAfter()
 
 void SheetTableView::removeColumns()
 {
-    assert(sheet != 0);
+    assert(sheet != nullptr);
 
     QModelIndexList cols = selectionModel()->selectedColumns();
     std::vector<int> sortedColumns;
@@ -675,7 +683,7 @@ void SheetTableView::pasteClipboard()
         }else{
             QByteArray res = mimeData->data(_SheetMime);
             Base::ByteArrayIStreambuf buf(res);
-            std::istream in(0);
+            std::istream in(nullptr);
             in.rdbuf(&buf);
             Base::XMLReader reader("<memory>", in);
             sheet->getCells()->pasteCells(reader,range);
@@ -761,7 +769,7 @@ void SheetTableView::finishEditWithMove(int keyPressed, Qt::KeyboardModifiers mo
     {
         // End should take you to the last occupied cell in the current column
         // Ctrl-End takes you to the last cell in the sheet
-        auto usedCells = sheet->getCells()->getUsedCells();
+        auto usedCells = sheet->getCells()->getNonEmptyCells();
         for (const auto& cell : usedCells) {
             if (modifiers == Qt::NoModifier) {
                 if (cell.col() == targetColumn)
@@ -935,6 +943,12 @@ void SheetTableView::mousePressEvent(QMouseEvent* event)
     QTableView::mousePressEvent(event);
 }
 
+void SheetTableView::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
+{
+    Gui::getMainWindow()->updateActions();
+    QTableView::selectionChanged(selected, deselected);
+}
+
 void SheetTableView::edit ( const QModelIndex & index )
 {
     currentEditIndex = index;
@@ -957,8 +971,9 @@ void SheetTableView::contextMenuEvent(QContextMenuEvent *)
         actionCut->setEnabled(true);
         actionCopy->setEnabled(true);
         actionDel->setEnabled(true);
-        actionSplit->setEnabled(true);
-        actionMerge->setEnabled(true);
+        actionSplit->setEnabled(selectedIndexesRaw().size() == 1 &&
+            sheet->isMergedCell(CellAddress(currentIndex().row(),currentIndex().column())));
+        actionMerge->setEnabled(selectedIndexesRaw().size() > 1);
     }
 
     auto ranges = selectedRanges();
@@ -969,9 +984,9 @@ void SheetTableView::contextMenuEvent(QContextMenuEvent *)
 
 QString SheetTableView::toHtml() const
 {
-    std::set<App::CellAddress> cells = sheet->getCells()->getUsedCells();
-    int rowCount = 1;
-    int colCount = 1;
+    auto cells = sheet->getCells()->getNonEmptyCells();
+    int rowCount = 0;
+    int colCount = 0;
     for (const auto& it : cells) {
         rowCount = std::max(rowCount, it.row());
         colCount = std::max(colCount, it.col());

@@ -46,6 +46,7 @@
 # include <QMenu>
 #endif
 
+#include <App/Document.h>
 #include <Base/Console.h>
 #include <Gui/Application.h>
 #include <Mod/Part/App/Tools.h>
@@ -74,7 +75,7 @@ Gui::ViewProvider *ViewProviderTransformed::startEditing(int ModNum) {
                 auto vp = Gui::Application::Instance->getViewProvider(obj);
                 if(vp)
                     return vp->startEditing(ModNum);
-                return 0;
+                return nullptr;
             }
         }
     }

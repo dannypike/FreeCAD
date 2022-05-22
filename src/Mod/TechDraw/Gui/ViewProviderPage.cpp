@@ -36,6 +36,7 @@
 # include <boost/signals2/connection.hpp>
 #endif
 
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <Base/Console.h>
 #include <Gui/Application.h>
@@ -76,15 +77,18 @@ PROPERTY_SOURCE(TechDrawGui::ViewProviderPage, Gui::ViewProviderDocumentObject)
 // Construction/Destruction
 
 ViewProviderPage::ViewProviderPage()
-  : m_mdiView(0),
+  : m_mdiView(nullptr),
     m_docReady(true),
     m_pageName(""),
     m_graphicsView(nullptr)
 {
     sPixmap = "TechDraw_TreePage";
-    static const char *group = "Base";
+    static const char *group = "Grid";
 
     ADD_PROPERTY_TYPE(ShowFrames ,(true),group,App::Prop_None,"NonGui! Show or hide View frames and Labels on this Page");
+    ADD_PROPERTY_TYPE(ShowGrid ,(PreferencesGui::showGrid()),group,App::Prop_None,"Show or hide a grid on this Page");
+    ADD_PROPERTY_TYPE(GridSpacing, (PreferencesGui::gridSpacing()), group, (App::PropertyType)(App::Prop_None),
+                     "Grid line spacing in mm");
 
     ShowFrames.setStatus(App::Property::Hidden,true);
     Visibility.setStatus(App::Property::Hidden,true);
@@ -300,6 +304,8 @@ bool ViewProviderPage::showMDIViewPage()
         m_mdiView->redrawAllViews();
         m_mdiView->fixOrphans(true);
     }
+    setGrid();
+
     return true;
 }
 
@@ -307,7 +313,7 @@ std::vector<App::DocumentObject*> ViewProviderPage::claimChildren(void) const
 {
     std::vector<App::DocumentObject*> temp;
 
-    App::DocumentObject *templateFeat = 0;
+    App::DocumentObject *templateFeat = nullptr;
     templateFeat = getDrawPage()->Template.getValue();
 
     if (templateFeat) {
@@ -373,7 +379,7 @@ MDIViewPage* ViewProviderPage::getMDIViewPage() const
 {
     if (m_mdiView.isNull()) {
         Base::Console().Log("INFO - ViewProviderPage::getMDIViewPage has no m_mdiView!\n");
-        return 0;
+        return nullptr;
     } else {
         return m_mdiView;
     }
@@ -382,11 +388,11 @@ MDIViewPage* ViewProviderPage::getMDIViewPage() const
 
 void ViewProviderPage::onChanged(const App::Property *prop)
 {
-//    if (prop == &(getDrawPage()->Template)) {
-//       if (m_mdiView) {
-//            m_mdiView->updateTemplate();
-//        }
-//    }
+    if (prop == &(ShowGrid)) {
+        setGrid();
+    } else if (prop == &(GridSpacing)) {
+        setGrid();
+    }
 
     Gui::ViewProviderDocumentObject::onChanged(prop);
 }
@@ -402,7 +408,7 @@ void ViewProviderPage::finishRestoring()
     m_docReady = true;
     //control drawing opening on restore based on Preference
     //mantis #2967 ph2 - don't even show blank page
-    if (Preferences::keepPagesUpToDate()) {
+    if (getDrawPage()->canUpdate()) {
         static_cast<void>(showMDIViewPage());
     }
     Gui::ViewProviderDocumentObject::finishRestoring();
@@ -491,4 +497,29 @@ Gui::MDIView *ViewProviderPage::getMDIView() const
 {
     const_cast<ViewProviderPage*>(this)->showMDIViewPage();
     return m_mdiView.data();
+}
+
+void  ViewProviderPage::setGrid(void)
+{
+    TechDraw::DrawPage* dp = getDrawPage();
+    if (!dp) {
+        return;
+    }
+    int pageWidth = 298;
+    int pageHeight = 215;
+    double gridStep = GridSpacing.getValue() > 0 ? GridSpacing.getValue() : 10.0;
+    if (dp) {
+        pageWidth = dp->getPageWidth();
+        pageHeight = dp->getPageHeight();
+    }
+    QGVPage* widget = getGraphicsView();
+    if (widget) {
+        if (ShowGrid.getValue()) {
+            widget->showGrid(true);
+            widget->makeGrid(pageWidth, pageHeight, gridStep);
+        } else {
+            widget->showGrid(false);
+        }
+        widget->updateViewport();
+    }
 }

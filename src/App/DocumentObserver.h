@@ -177,6 +177,9 @@ public:
     SubObjectT(const DocumentObject*, const char *subname);
 
     /*! Constructor */
+    SubObjectT(const DocumentObject*);
+
+    /*! Constructor */
     SubObjectT(const char *docName, const char *objName, const char *subname);
 
     /*! Assignment operator */
@@ -185,15 +188,37 @@ public:
     /*! Assignment operator */
     SubObjectT &operator=(SubObjectT &&);
 
+    /*! Assignment operator */
+    SubObjectT &operator=(const DocumentObjectT&);
+
+    /*! Assignment operator */
+    SubObjectT &operator=(const App::DocumentObject*);
+
     /*! Equality operator */
     bool operator==(const SubObjectT&) const;
 
     /// Set the subname path to the sub-object
     void setSubName(const char *subname);
 
+    /// Set the subname path to the sub-object
+    void setSubName(const std::string &subname) {
+        setSubName(subname.c_str());
+    }
+
     /// Return the subname path
     const std::string &getSubName() const;
 
+    /** Return docname#objname (label)
+     * @param docName: optional document name. The document prefix will only be printed
+     * if it is different then the given 'doc'.
+     */
+    std::string getObjectFullName(const char *docName=nullptr) const;
+
+    /** Return docname#objname.subname (label)
+     * @param doc: optional document name. The document prefix will only be printed
+     * if it is different then the given 'doc'.
+     */
+    std::string getSubObjectFullName(const char *docName=nullptr) const;
     /// Return the subname path without sub-element
     std::string getSubNameNoElement() const;
 
@@ -206,7 +231,7 @@ public:
     /** Return the old style sub-element name
      * @param index: if given, then return the element type, and extract the index
      */
-    std::string getOldElementName(int *index=0) const;
+    std::string getOldElementName(int *index=nullptr) const;
 
     /// Return the sub-object
     DocumentObject *getSubObject() const;
@@ -377,9 +402,9 @@ public:
     }
     /*!
      * \brief operator ->
-     * \return pointer to the document
+     * \return pointer to the document object
      */
-    T* operator->() {
+    T* operator->() const {
         return ptr.get<T>();
     }
     /*!

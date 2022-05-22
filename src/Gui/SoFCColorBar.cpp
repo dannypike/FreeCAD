@@ -20,13 +20,13 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
+
 #ifndef _PreComp_
-# include <Inventor/nodes/SoEventCallback.h>
 # include <Inventor/actions/SoGLRenderAction.h>
-# include <Inventor/nodes/SoSwitch.h>
 # include <Inventor/events/SoMouseButtonEvent.h>
+# include <Inventor/nodes/SoEventCallback.h>
+# include <Inventor/nodes/SoSwitch.h>
 # include <QApplication>
 # include <QMenu>
 #endif
@@ -34,6 +34,7 @@
 #include "SoFCColorBar.h"
 #include "SoFCColorGradient.h"
 #include "SoFCColorLegend.h"
+
 
 using namespace Gui;
 
@@ -89,8 +90,7 @@ public:
     ~SoFCColorBarProxyObject() {}
     void customEvent(QEvent *)
     {
-        if (bar->customize())
-            bar->Notify(0);
+        bar->customize(bar->getActiveBar());
         this->deleteLater();
     }
 
@@ -196,9 +196,19 @@ float SoFCColorBar::getMaxValue () const
     return this->getActiveBar()->getMaxValue();
 }
 
-bool SoFCColorBar::customize()
+void SoFCColorBar::triggerChange(SoFCColorBarBase*)
 {
-    return this->getActiveBar()->customize();
+    Notify(0);
+}
+
+void SoFCColorBar::customize(SoFCColorBarBase* child)
+{
+    try {
+        return child->customize(this);
+    }
+    catch (const Base::ValueError& e) {
+        e.ReportException();
+    }
 }
 
 App::Color SoFCColorBar::getColor( float fVal ) const

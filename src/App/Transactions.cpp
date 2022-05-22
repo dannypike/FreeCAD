@@ -99,7 +99,8 @@ static std::atomic<int> _TransactionID;
 
 int Transaction::getNewID() {
     int id = ++_TransactionID;
-    if(id) return id;
+    if(id)
+        return id;
     // wrap around? really?
     return ++_TransactionID;
 }
@@ -389,13 +390,13 @@ void TransactionObject::addOrRemoveProperty(const Property* pcProp, bool add)
     }
     if(data.property) {
         delete data.property;
-        data.property = 0;
+        data.property = nullptr;
     }
     data.propertyOrig = pcProp;
     static_cast<DynamicProperty::PropData&>(data) = 
         pcProp->getContainer()->getDynamicPropertyData(pcProp);
     if(add) 
-        data.property = 0;
+        data.property = nullptr;
     else {
         data.property = pcProp->Copy();
         data.propertyType = pcProp->getTypeId();

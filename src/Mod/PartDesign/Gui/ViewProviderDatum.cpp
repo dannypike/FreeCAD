@@ -41,6 +41,7 @@
 # include <QMenu>
 #endif
 
+#include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -89,7 +90,7 @@ ViewProviderDatum::ViewProviderDatum()
     Transparency.setValue (col.a * 100);
 
     oldWb = "";
-    oldTip = NULL;
+    oldTip = nullptr;
 }
 
 ViewProviderDatum::~ViewProviderDatum()
@@ -107,18 +108,22 @@ void ViewProviderDatum::attach(App::DocumentObject *obj)
     if (o->getTypeId() == PartDesign::Plane::getClassTypeId()) {
         datumType = QString::fromLatin1("Plane");
         datumText = QObject::tr("Plane");
+        datumMenuText = tr("Datum Plane parameters");
     }
     else if (o->getTypeId() == PartDesign::Line::getClassTypeId()) {
         datumType = QString::fromLatin1("Line");
         datumText = QObject::tr("Line");
+        datumMenuText = tr("Datum Line parameters");
     }
     else if (o->getTypeId() == PartDesign::Point::getClassTypeId()) {
         datumType = QString::fromLatin1("Point");
         datumText = QObject::tr("Point");
+        datumMenuText = tr("Datum Point parameters");
     }
     else if (o->getTypeId() == PartDesign::CoordinateSystem::getClassTypeId()) {
         datumType = QString::fromLatin1("CoordinateSystem");
         datumText = QObject::tr("Coordinate System");
+        datumMenuText = tr("Local Coordinate System parameters");
     }
 
     SoShapeHints* hints = new SoShapeHints();
@@ -206,7 +211,7 @@ SoDetail* ViewProviderDatum::getDetail(const char* subelement) const
         return detail;
    }
 
-    return NULL;
+    return nullptr;
 }
 
 bool ViewProviderDatum::isSelectable(void) const
@@ -235,7 +240,7 @@ bool ViewProviderDatum::setEdit(int ModNum)
         Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
         TaskDlgDatumParameters *datumDlg = qobject_cast<TaskDlgDatumParameters *>(dlg);
         if (datumDlg && datumDlg->getViewProvider() != this)
-            datumDlg = 0; // another datum feature left open its task panel
+            datumDlg = nullptr; // another datum feature left open its task panel
         if (dlg && !datumDlg) {
             QMessageBox msgBox;
             msgBox.setText(QObject::tr("A dialog is already open in the task panel"));
@@ -273,7 +278,8 @@ bool ViewProviderDatum::doubleClicked(void)
     if(!activeDoc)
         activeDoc = getDocument();
     auto activeView = activeDoc->getActiveView();
-    if(!activeView) return false;
+    if(!activeView)
+        return false;
 
     std::string Msg("Edit ");
     Msg += this->pcObject->Label.getValue();
@@ -283,7 +289,7 @@ bool ViewProviderDatum::doubleClicked(void)
     PartDesign::Body* activeBody = activeView->getActiveObject<PartDesign::Body*>(PDBODYKEY);
     auto datumBody = PartDesignGui::getBodyFor(pcDatum, false);
 
-    if (datumBody != NULL) {
+    if (datumBody != nullptr) {
         if (datumBody != activeBody) {
             Gui::Command::doCommand(Gui::Command::Gui,
                     "Gui.ActiveDocument.ActiveView.setActiveObject('%s',%s)",

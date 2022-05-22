@@ -30,14 +30,12 @@
 #include <GC_MakeArcOfCircle.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_TrimmedCurve.hxx>
-#include <Python.h>
 #include <QMessageBox>
 #include <QSignalMapper>
 #include <Inventor/SoPickedPoint.h>
 #include <Inventor/events/SoMouseButtonEvent.h>
 #endif
 
-#include <CXX/WrapPython.h>
 #include <Base/Interpreter.h>
 #include <Base/Rotation.h>
 #include <Base/Tools.h>
@@ -1982,7 +1980,7 @@ void Location::pickCallback(void * ud, SoEventCallback * n)
             view->setEditing(false);
             view->setRedirectToSceneGraph(false);
             Location* dlg = reinterpret_cast<Location*>(ud);
-            dlg->activeView = 0;
+            dlg->activeView = nullptr;
             view->removeEventCallback(SoMouseButtonEvent::getClassTypeId(), pickCallback,ud);
             SoNode* root = view->getSceneGraph();
             if (root && root->getTypeId().isDerivedFrom(Gui::SoFCUnifiedSelection::getClassTypeId()))
@@ -2025,12 +2023,12 @@ TaskPrimitives::TaskPrimitives()
 {
     Gui::TaskView::TaskBox* taskbox;
     widget = new DlgPrimitives();
-    taskbox = new Gui::TaskView::TaskBox(QPixmap(), widget->windowTitle(), true, 0);
+    taskbox = new Gui::TaskView::TaskBox(QPixmap(), widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 
     location = new Location();
-    taskbox = new Gui::TaskView::TaskBox(QPixmap(), location->windowTitle() ,true, 0);
+    taskbox = new Gui::TaskView::TaskBox(QPixmap(), location->windowTitle() ,true, nullptr);
     taskbox->groupLayout()->addWidget(location);
     Content.push_back(taskbox);
 }
@@ -2072,13 +2070,13 @@ TaskPrimitivesEdit::TaskPrimitivesEdit(Part::Primitive* feature)
     // create and show dialog for the primitives
     Gui::TaskView::TaskBox* taskbox;
     widget = new DlgPrimitives(nullptr, feature);
-    taskbox = new Gui::TaskView::TaskBox(QPixmap(), widget->windowTitle(), true, 0);
+    taskbox = new Gui::TaskView::TaskBox(QPixmap(), widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 
     // create and show dialog for the location
     location = new Location(nullptr, feature);
-    taskbox = new Gui::TaskView::TaskBox(QPixmap(), location->windowTitle(), true, 0);
+    taskbox = new Gui::TaskView::TaskBox(QPixmap(), location->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(location);
     Content.push_back(taskbox);
 }

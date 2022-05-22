@@ -49,6 +49,7 @@
 #include <Gui/Application.h>
 #include <Gui/Document.h>
 #include <Gui/Selection.h>
+#include <Gui/SelectionObject.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/ViewProvider.h>
 #include <Gui/BitmapFactory.h>
@@ -223,7 +224,8 @@ CONTEXT_MEMBER_DEF("Sketcher_SelectVerticalAxis",doSelectVAxis)
 void ElementView::deleteSelectedItems()
 {
     App::Document* doc = App::GetApplication().getActiveDocument();
-    if (!doc) return;
+    if (!doc)
+        return;
 
     doc->openTransaction("Delete element");
     std::vector<Gui::SelectionObject> sel = Gui::Selection().getSelectionEx(doc->getName());
@@ -256,7 +258,7 @@ void ElementView::keyPressEvent(QKeyEvent * event)
 /* TRANSLATOR SketcherGui::TaskSketcherElements */
 
 TaskSketcherElements::TaskSketcherElements(ViewProviderSketch *sketchView)
-    : TaskBox(Gui::BitmapFactory().pixmap("document-new"),tr("Elements"),true, 0)
+    : TaskBox(Gui::BitmapFactory().pixmap("document-new"),tr("Elements"),true, nullptr)
     , sketchView(sketchView)
     , ui(new Ui_TaskSketcherElements())
     , focusItemIndex(-1)
@@ -467,13 +469,13 @@ void TaskSketcherElements::on_listWidgetElements_itemSelectionChanged(void)
     if(focusItemIndex>-1 && focusItemIndex<ui->listWidgetElements->count())
       itf=static_cast<ElementItem*>(ui->listWidgetElements->item(focusItemIndex));
     else
-      itf=NULL;
+      itf=nullptr;
 
     bool multipleselection=true; // ctrl type of selection in listWidget
     bool multipleconsecutiveselection=false; // shift type of selection in listWidget
 
     if (!inhibitSelectionUpdate) {
-        if(itf!=NULL) {
+        if(itf!=nullptr) {
             switch(element){
             case 0:
                 itf->isLineSelected=!itf->isLineSelected;
@@ -613,7 +615,8 @@ void TaskSketcherElements::on_listWidgetElements_itemSelectionChanged(void)
 void TaskSketcherElements::on_listWidgetElements_itemEntered(QListWidgetItem *item)
 {
     ElementItem *it = dynamic_cast<ElementItem*>(item);
-    if (!it) return;
+    if (!it)
+        return;
 
     Gui::Selection().rmvPreselect();
 
@@ -1161,9 +1164,12 @@ TaskSketcherElements::MultIcon::MultIcon(const char* name)
 
 QIcon TaskSketcherElements::MultIcon::getIcon(bool construction, bool external) const
 {
-    if (construction && external) return QIcon();
-    if (construction) return Construction;
-    if (external) return External;
+    if (construction && external)
+        return QIcon();
+    if (construction)
+        return Construction;
+    if (external)
+        return External;
     return Normal;
 }
 

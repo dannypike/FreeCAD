@@ -194,23 +194,22 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self.extensionsCache = dict()
         self.extensionsReady = False
         self.enabled = True
+        self.lastDefaultLength = ""
 
         self.extensions = list()
 
         self.defaultLength = PathGui.QuantitySpinBox(
             self.form.defaultLength, obj, "ExtensionLengthDefault"
-        )  # pylint: disable=attribute-defined-outside-init
+        )
 
         self.form.extensionTree.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.form.extensionTree.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
 
-        self.switch = coin.SoSwitch()  # pylint: disable=attribute-defined-outside-init
+        self.switch = coin.SoSwitch()
         self.obj.ViewObject.RootNode.addChild(self.switch)
         self.switch.whichChild = coin.SO_SWITCH_ALL
 
-        self.model = QtGui.QStandardItemModel(
-            self.form.extensionTree
-        )  # pylint: disable=attribute-defined-outside-init
+        self.model = QtGui.QStandardItemModel(self.form.extensionTree)
         self.model.setHorizontalHeaderLabels(["Base", "Extension"])
 
         """
@@ -224,7 +223,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         """
         self.form.showExtensions.setCheckState(QtCore.Qt.Unchecked)
 
-        self.blockUpdateData = False  # pylint: disable=attribute-defined-outside-init
+        self.blockUpdateData = False
 
     def cleanupPage(self, obj):
         try:
@@ -261,21 +260,19 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
 
     def updateProxyExtensions(self, obj):
         PathLog.debug("updateProxyExtensions()")
-        self.extensions = (
-            self.currentExtensions()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.extensions = self.currentExtensions()
         FeatureExtensions.setExtensions(obj, self.extensions)
 
     def getFields(self, obj):
         PathLog.track(obj.Label, self.model.rowCount(), self.model.columnCount())
-        self.blockUpdateData = True  # pylint: disable=attribute-defined-outside-init
+        self.blockUpdateData = True
 
         if obj.ExtensionCorners != self.form.extendCorners.isChecked():
             obj.ExtensionCorners = self.form.extendCorners.isChecked()
         self.defaultLength.updateProperty()
 
         self.updateProxyExtensions(obj)
-        self.blockUpdateData = False  # pylint: disable=attribute-defined-outside-init
+        self.blockUpdateData = False
 
     def setFields(self, obj):
         PathLog.track(obj.Label)
@@ -288,6 +285,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self._initializeExtensions(obj)  # Efficiently initialize Extensions
         self.defaultLength.updateSpinBox()
         self._getUseOutlineState()  # Find `useOutline` checkbox and get its boolean value
+        self.lastDefaultLength = self.form.defaultLength.text()  # set last DL value
         self.fieldsSet = True  # flag to identify initial values set
 
     def _initializeExtensions(self, obj):
@@ -303,13 +301,13 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             self.form.extensionEdit.setDisabled(True)
         self.setExtensions(self.extensions)
 
-    def updateQuantitySpinBoxes(self, index=None):
-        prevValue = self.form.defaultLength.text()
+    def _applyDefaultLengthChange(self, index=None):
+        """_applyDefaultLengthChange(index=None)...
+        Helper method to update Default Length spinbox,
+        and update extensions due to change in Default Length."""
         self.defaultLength.updateSpinBox()
-        postValue = self.form.defaultLength.text()
-
-        if postValue != prevValue:
-            PathLog.debug("updateQuantitySpinBoxes() post != prev value")
+        if self.form.defaultLength.text() != self.lastDefaultLength:
+            self.lastDefaultLength = self.form.defaultLength.text()
             self._resetCachedExtensions()  # Reset extension cache because extension dimensions likely changed
             self._enableExtensions()  # Recalculate extensions
 
@@ -397,7 +395,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
                             ],
                             key=lambda s: int(s),
                         )
-                    )  # pylint: disable=unnecessary-lambda
+                    )
                 ext2 = self._cachedExtension(self.obj, base, sub, label)
                 createSubItem(label, ext2)
 
@@ -437,7 +435,6 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
 
         # remove current extensions and all their visuals
         def removeItemSwitch(item, ext):
-            # pylint: disable=unused-argument
             ext.hide()
             if ext.root:
                 self.switch.removeChild(ext.root)
@@ -495,7 +492,7 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             if self.fieldsSet:
                 if self.form.enableExtensions.isChecked():
                     if prop == "ExtensionLengthDefault":
-                        self.updateQuantitySpinBoxes()
+                        self._applyDefaultLengthChange()
                     elif prop == "Base":
                         self.extensionsReady = False
                         self.setExtensions(FeatureExtensions.getExtensions(obj))
@@ -526,7 +523,6 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
             FreeCADGui.Selection.clearSelection()
 
             def selectItem(item, ext):
-                # pylint: disable=unused-argument
                 for sel in selection:
                     if ext.base == sel.obj and ext.edge == sel.sub:
                         return True
@@ -597,7 +593,6 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         if self.form.showExtensions.isChecked():
 
             def enableExtensionEdit(item, ext):
-                # pylint: disable=unused-argument
                 ext.show()
 
             self.forAllItemsCall(enableExtensionEdit)
@@ -632,14 +627,12 @@ class TaskPanelExtensionPage(PathOpGui.TaskPanelPage):
         self.form.buttonClear.clicked.connect(self.extensionsClear)
         self.form.buttonDisable.clicked.connect(self.extensionsDisable)
         self.form.buttonEnable.clicked.connect(self.extensionsEnable)
-        self.form.defaultLength.editingFinished.connect(self.updateQuantitySpinBoxes)
         self.form.enableExtensions.toggled.connect(self._enableExtensions)
+        self.form.defaultLength.editingFinished.connect(self._applyDefaultLengthChange)
 
         self.model.itemChanged.connect(self.updateItemEnabled)
 
-        self.selectionModel = (
-            self.form.extensionTree.selectionModel()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.selectionModel = self.form.extensionTree.selectionModel()
         self.selectionModel.selectionChanged.connect(self.selectionChanged)
         self.selectionChanged()
 

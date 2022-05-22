@@ -20,18 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <string>
 # include <QAction>
 # include <QApplication>
-# include <QFileInfo>
 # include <QKeyEvent>
 # include <QEvent>
 # include <QDropEvent>
 # include <QDragEnterEvent>
-# include <QFileDialog>
 # include <QLayout>
 # include <QMdiSubWindow>
 # include <QMessageBox>
@@ -39,60 +37,39 @@
 # include <QPainter>
 # include <QPrinter>
 # include <QPrintDialog>
-# include <QPrinterInfo>
 # include <QPrintPreviewDialog>
 # include <QStackedWidget>
 # include <QTimer>
 # include <QUrl>
 # include <QWindow>
-# include <Inventor/actions/SoWriteAction.h>
 # include <Inventor/actions/SoGetPrimitiveCountAction.h>
+# include <Inventor/fields/SoSFColor.h>
+# include <Inventor/fields/SoSFString.h>
 # include <Inventor/nodes/SoDirectionalLight.h>
-# include <Inventor/nodes/SoMaterial.h>
 # include <Inventor/nodes/SoOrthographicCamera.h>
 # include <Inventor/nodes/SoPerspectiveCamera.h>
 # include <Inventor/nodes/SoSeparator.h>
-# include <Inventor/nodes/SoShapeHints.h>
-# include <Inventor/events/SoEvent.h>
-# include <Inventor/fields/SoSFString.h>
-# include <Inventor/fields/SoSFColor.h>
 #endif
 
-#include <QtOpenGL.h>
-
-#include <Base/Exception.h>
+#include <App/Document.h>
 #include <Base/Console.h>
-#include <Base/FileInfo.h>
 #include <Base/Interpreter.h>
 
-#include <App/DocumentObject.h>
-
 #include "View3DInventor.h"
-#include "View3DInventorViewer.h"
+#include "Application.h"
 #include "Document.h"
 #include "FileDialog.h"
-#include "Application.h"
 #include "MainWindow.h"
-#include "MenuManager.h"
+#include "NavigationStyle.h"
+#include "SoFCDB.h"
+#include "SoFCSelectionAction.h"
+#include "SoFCVectorizeSVGAction.h"
+#include "View3DInventorExamples.h"
+#include "View3DInventorViewer.h"
+#include "View3DPy.h"
 #include "ViewProvider.h"
 #include "WaitCursor.h"
-#include "SoFCVectorizeSVGAction.h"
 
-// build in Inventor
-#include <Inventor/nodes/SoPerspectiveCamera.h>
-#include <Inventor/nodes/SoOrthographicCamera.h>
-
-#include "View3DInventorExamples.h"
-#include "ViewProviderDocumentObject.h"
-#include "SoFCSelectionAction.h"
-#include "View3DPy.h"
-#include "SoFCDB.h"
-#include "NavigationStyle.h"
-#include "PropertyView.h"
-#include "Selection.h"
-#include "SelectionObject.h"
-
-#include <locale>
 
 using namespace Gui;
 
@@ -109,7 +86,7 @@ TYPESYSTEM_SOURCE_ABSTRACT(Gui::View3DInventor,Gui::MDIView)
 
 View3DInventor::View3DInventor(Gui::Document* pcDocument, QWidget* parent,
                                const QtGLWidget* sharewidget, Qt::WindowFlags wflags)
-    : MDIView(pcDocument, parent, wflags), _viewerPy(0)
+    : MDIView(pcDocument, parent, wflags), _viewerPy(nullptr)
 {
     stack = new QStackedWidget(this);
     // important for highlighting
@@ -211,7 +188,7 @@ View3DInventor::~View3DInventor()
         QWidget* par = foc->parentWidget();
         while (par) {
             if (par == this) {
-                foc->setFocusProxy(0);
+                foc->setFocusProxy(nullptr);
                 foc->clearFocus();
                 break;
             }
@@ -230,8 +207,8 @@ View3DInventor::~View3DInventor()
 
 void View3DInventor::deleteSelf()
 {
-    _viewer->setSceneGraph(0);
-    _viewer->setDocument(0);
+    _viewer->setSceneGraph(nullptr);
+    _viewer->setDocument(nullptr);
     MDIView::deleteSelf();
 }
 
@@ -507,6 +484,7 @@ void View3DInventor::printPdf()
         Gui::WaitCursor wc;
         QPrinter printer(QPrinter::ScreenResolution);
         printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setPageOrientation(QPageLayout::Landscape);
         printer.setOutputFileName(filename);
         print(&printer);
     }
@@ -606,7 +584,8 @@ bool View3DInventor::onMsg(const char* pMsg, const char** ppReturn)
     }
     else if(strcmp("GetCamera",pMsg) == 0 ) {
         SoCamera * Cam = _viewer->getSoRenderManager()->getCamera();
-        if (!Cam) return false;
+        if (!Cam)
+            return false;
         *ppReturn = SoFCDB::writeNodesToString(Cam).c_str();
         return true;
     }
@@ -985,7 +964,7 @@ void View3DInventor::setCurrentViewMode(ViewMode newmode)
         qApp->installEventFilter(this);
     }
     else if (newmode == Child) {
-        _viewer->getGLWidget()->setFocusProxy(0);
+        _viewer->getGLWidget()->setFocusProxy(nullptr);
         qApp->removeEventFilter(this);
         QList<QAction*> acts = this->actions();
         for (QList<QAction*>::Iterator it = acts.begin(); it != acts.end(); ++it)

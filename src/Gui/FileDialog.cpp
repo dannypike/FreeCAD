@@ -26,18 +26,16 @@
 # include <QApplication>
 # include <QButtonGroup>
 # include <QCompleter>
-# include <QComboBox>
-# include <QDesktopServices>
-# include <QDialogButtonBox>
 # include <QDir>
 # include <QGridLayout>
 # include <QGroupBox>
 # include <QLineEdit>
 # include <QPushButton>
 # include <QRadioButton>
+# include <QResizeEvent>
+# include <QStandardPaths>
 # include <QStyle>
 # include <QUrl>
-# include <QResizeEvent>
 #endif
 
 #include <Base/Parameter.h>
@@ -45,8 +43,8 @@
 
 #include "FileDialog.h"
 #include "MainWindow.h"
-#include "BitmapFactory.h"
 #include "Tools.h"
+
 
 using namespace Gui;
 
@@ -720,9 +718,9 @@ void FileChooser::chooseFile()
     QString fn;
     if ( mode() == File ) {
         if (acceptMode() == AcceptOpen)
-            fn = QFileDialog::getOpenFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, dlgOpt);
+            fn = QFileDialog::getOpenFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, nullptr, dlgOpt);
         else
-            fn = QFileDialog::getSaveFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, 0, dlgOpt);
+            fn = QFileDialog::getSaveFileName(this, tr( "Select a file" ), prechosenDirectory, _filter, nullptr, dlgOpt);
     } else {
         QFileDialog::Options option = QFileDialog::ShowDirsOnly | dlgOpt;
         fn = QFileDialog::getExistingDirectory( this, tr( "Select a directory" ), prechosenDirectory,option );

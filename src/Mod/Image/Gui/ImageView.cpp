@@ -17,19 +17,21 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <cmath>
 # include <QAction>
 # include <QApplication>
 # include <QMenu>
 # include <QMouseEvent>
-# include <QSlider>
 # include <QStatusBar>
 # include <QToolBar>
-# include <cmath>
 #endif
 
+#include <App/Application.h>
+#include <Base/Parameter.h>
+
 #include "ImageView.h"
-#include "../App/ImageBase.h"
 #include "XpmImages.h"
+
 
 using namespace ImageGui;
 
@@ -480,11 +482,7 @@ void ImageView::wheelEvent(QWheelEvent * cEvent)
 #endif
 
        // Zoom around centrally displayed image point
-#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
        int numTicks = cEvent->angleDelta().y() / 120;
-#else
-       int numTicks = cEvent->delta() / 120;
-#endif
        if (_invertZoom)
            numTicks = -numTicks;
 

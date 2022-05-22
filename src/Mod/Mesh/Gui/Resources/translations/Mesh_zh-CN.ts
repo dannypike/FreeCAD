@@ -589,7 +589,7 @@
     <name>Command</name>
     <message>
       <source>Mesh Create</source>
-      <translation type="unfinished">Mesh Create</translation>
+      <translation>网格创建</translation>
     </message>
     <message>
       <source>Segment by tool mesh</source>
@@ -1384,10 +1384,6 @@ to a smoother appearance.
   <context>
     <name>MeshGui::RemeshGmsh</name>
     <message>
-      <source>Remesh by gmsh</source>
-      <translation>通过 gmsh 进行网格划分</translation>
-    </message>
-    <message>
       <source>Remeshing Parameter</source>
       <translation>删除参数</translation>
     </message>
@@ -1426,6 +1422,10 @@ to a smoother appearance.
     <message>
       <source>Clear</source>
       <translation>清除</translation>
+    </message>
+    <message>
+      <source>Remesh by Gmsh</source>
+      <translation type="unfinished">Remesh by Gmsh</translation>
     </message>
   </context>
   <context>
@@ -1698,7 +1698,7 @@ Please visit http://www.openscad.org/index.html to install it.</source>
     </message>
     <message>
       <source>Inventor V2.1 ASCII</source>
-      <translation type="unfinished">Inventor V2.1 ASCII</translation>
+      <translation>Inventor V2.1 ascii</translation>
     </message>
     <message>
       <source>Stanford Polygon</source>
@@ -1706,7 +1706,7 @@ Please visit http://www.openscad.org/index.html to install it.</source>
     </message>
     <message>
       <source>NASTRAN</source>
-      <translation type="unfinished">NASTRAN</translation>
+      <translation>NASTRAN</translation>
     </message>
     <message>
       <source>All Files</source>
@@ -1840,6 +1840,10 @@ Please visit http://www.openscad.org/index.html to install it.</source>
       <source>Annotation</source>
       <translation>注释</translation>
     </message>
+    <message>
+      <source>3D Manufacturing Format</source>
+      <translation type="unfinished">3D Manufacturing Format</translation>
+    </message>
   </context>
   <context>
     <name>Workbench</name>
@@ -1858,6 +1862,10 @@ Please visit http://www.openscad.org/index.html to install it.</source>
     <message>
       <source>Mesh tools</source>
       <translation>网格工具</translation>
+    </message>
+    <message>
+      <source>Cutting</source>
+      <translation>锯切</translation>
     </message>
   </context>
 </TS>

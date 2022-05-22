@@ -33,9 +33,11 @@
 #endif
 
 #include <App/Application.h>
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <Base/Console.h>
 #include <Base/FileInfo.h>
+#include <Base/Stream.h>
 #include <Base/Tools.h>
 #include <Base/Writer.h>
 
@@ -50,7 +52,7 @@ FC_LOG_LEVEL_INIT("App",true,true)
 using namespace Gui;
 namespace bp = boost::placeholders;
 
-AutoSaver* AutoSaver::self = 0;
+AutoSaver* AutoSaver::self = nullptr;
 
 AutoSaver::AutoSaver(QObject* parent)
   : QObject(parent), timeout(900000), compressed(true)

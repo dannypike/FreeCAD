@@ -40,6 +40,7 @@
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <App/DocumentObject.h>
 #include <App/Material.h>
 #include <Base/Console.h>
 #include <Gui/Selection.h>
@@ -68,6 +69,7 @@
 #include "QGTracker.h"
 
 #include <Mod/TechDraw/App/DrawPage.h>
+#include <Mod/TechDraw/App/DrawView.h>
 #include <Mod/TechDraw/App/DrawViewClip.h>
 #include <Mod/TechDraw/App/DrawProjGroup.h>
 #include <Mod/TechDraw/App/DrawProjGroupItem.h>
@@ -396,7 +398,7 @@ TechDraw::DrawView * QGIView::getViewObject() const
 
 void QGIView::setViewFeature(TechDraw::DrawView *obj)
 {
-    if(obj == 0)
+    if(obj == nullptr)
         return;
 
     viewObj = obj;
@@ -422,19 +424,9 @@ void QGIView::draw()
     if (getViewObject() != nullptr) {
         x = Rez::guiX(getViewObject()->X.getValue());
         y = Rez::guiX(getViewObject()->Y.getValue());
-        if (getFrameState()) {
-            //+/- space for label if DPGI
-            TechDraw::DrawProjGroupItem* dpgi = dynamic_cast<TechDraw::DrawProjGroupItem*>(getViewObject());
-            if (dpgi != nullptr) {
-                double vertLabelSpace = Rez::guiX(Preferences::labelFontSizeMM());
-                if (y > 0) {
-                    y += vertLabelSpace;
-                } else if (y < 0) {
-                    y -= vertLabelSpace;
-                }
-            }
+        if (!getViewObject()->LockPosition.getValue()) {
+            setPosition(x, y);
         }
-        setPosition(x, y);
     }
     if (isVisible()) {
         drawBorder();
@@ -451,7 +443,6 @@ void QGIView::drawCaption()
     QRectF displayArea = customChildrenBoundingRect();
     m_caption->setDefaultTextColor(m_colCurrent);
     m_font.setFamily(getPrefFont());
-//    m_font.setPixelSize(calculateFontPixelSize(getPrefFontSize()));
     m_font.setPixelSize(PreferencesGui::labelFontSizePX());
     m_caption->setFont(m_font);
     QString captionStr = QString::fromUtf8(getViewObject()->Caption.getValue());
@@ -464,7 +455,6 @@ void QGIView::drawCaption()
     if (getFrameState() || vp->KeepLabel.getValue()) {            //place below label if label visible
         m_caption->setY(displayArea.bottom() + labelHeight);
     } else {
-//        m_caption->setY(displayArea.bottom() + labelCaptionFudge * getPrefFontSize());
         m_caption->setY(displayArea.bottom() + labelCaptionFudge * Preferences::labelFontSizeMM());
     }
     m_caption->show();
@@ -494,7 +484,6 @@ void QGIView::drawBorder()
 
     m_label->setDefaultTextColor(m_colCurrent);
     m_font.setFamily(getPrefFont());
-//    m_font.setPixelSize(calculateFontPixelSize(getPrefFontSize()));
     m_font.setPixelSize(PreferencesGui::labelFontSizePX());
 
     m_label->setFont(m_font);
@@ -611,7 +600,7 @@ QGIView* QGIView::getQGIVByName(std::string name)
             }
         }
     }
-    return 0;
+    return nullptr;
 }
 
 /* static */

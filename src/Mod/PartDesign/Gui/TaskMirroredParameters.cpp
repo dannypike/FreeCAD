@@ -28,6 +28,7 @@
 # include <QMessageBox>
 #endif
 
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/Origin.h>
 #include <Base/Console.h>
@@ -121,7 +122,7 @@ void TaskMirroredParameters::setupUI()
     // Fill data into dialog elements
     for (std::vector<App::DocumentObject*>::const_iterator i = originals.begin(); i != originals.end(); ++i) {
         const App::DocumentObject* obj = *i;
-        if (obj != NULL) {
+        if (obj != nullptr) {
             QListWidgetItem* item = new QListWidgetItem();
             item->setText(QString::fromUtf8(obj->Label.getValue()));
             item->setData(Qt::UserRole, QString::fromLatin1(obj->getNameInDocument()));
@@ -138,7 +139,7 @@ void TaskMirroredParameters::setupUI()
         this->fillPlanesCombo(planeLinks,static_cast<Part::Part2DObject*>(sketch));
     }
     else {
-        this->fillPlanesCombo(planeLinks, NULL);
+        this->fillPlanesCombo(planeLinks, nullptr);
     }
 
     //show the parts coordinate system planes for selection
@@ -229,7 +230,7 @@ void TaskMirroredParameters::onPlaneChanged(int /*num*/)
     setupTransaction();
     PartDesign::Mirrored* pcMirrored = static_cast<PartDesign::Mirrored*>(getObject());
     try{
-        if(planeLinks.getCurrentLink().getValue() == 0){
+        if(planeLinks.getCurrentLink().getValue() == nullptr){
             // enter reference selection mode
             hideObject();
             showBase();
@@ -241,7 +242,7 @@ void TaskMirroredParameters::onPlaneChanged(int /*num*/)
             pcMirrored->MirrorPlane.Paste(planeLinks.getCurrentLink());
         }
     } catch (Base::Exception &e) {
-        QMessageBox::warning(0,tr("Error"),QString::fromLatin1(e.what()));
+        QMessageBox::warning(nullptr,tr("Error"),QString::fromLatin1(e.what()));
     }
 
     recomputeFeature();

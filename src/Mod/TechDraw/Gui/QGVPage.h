@@ -23,11 +23,18 @@
 #ifndef TECHDRAWGUI_QGVIEW_H
 #define TECHDRAWGUI_QGVIEW_H
 
-#include <QGraphicsView>
+#include <Mod/TechDraw/TechDrawGlobal.h>
+
 #include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QLabel>
+#include <QPainterPath>
 
 class QTemporaryFile;
+
+namespace App {
+class DocumentObject;
+}
 
 namespace TechDraw {
 class DrawView;
@@ -66,7 +73,7 @@ class TechDrawGuiExport QGVPage : public QGraphicsView
 public:
     enum RendererType { Native, OpenGL, Image };
 
-    QGVPage(ViewProviderPage *vp, QGraphicsScene* s, QWidget *parent = 0);
+    QGVPage(ViewProviderPage *vp, QGraphicsScene* s, QWidget *parent = nullptr);
     virtual ~QGVPage();
 
     void setRenderer(RendererType type = Native);
@@ -122,6 +129,9 @@ public:
     void saveSvg(QString filename);
     void postProcessXml(QTemporaryFile& tempFile, QString filename, QString pagename);
 
+    void makeGrid(int width, int height, double step);
+    void showGrid(bool state) {m_showGrid = state;}
+    void updateViewport(void) {viewport()->repaint();}
 
 public Q_SLOTS:
     void setHighQualityAntialiasing(bool highQualityAntialiasing);
@@ -150,6 +160,7 @@ protected:
 
     void activateCursor(QCursor cursor);
     void resetCursor();
+    virtual void drawForeground(QPainter *painter, const QRectF &rect) override;
 
 private:
     RendererType m_renderer;
@@ -172,6 +183,9 @@ private:
 
     QPoint panOrigin;
     bool panningActive;
+
+    bool m_showGrid;
+    QPainterPath m_gridPath;
 };
 
 } // namespace 

@@ -22,60 +22,37 @@
 
 #include "PreCompiled.h"
 #ifndef _PreComp_
+# include <QApplication>
 # include <QMessageBox>
-# include <iostream>
 # include <string>
 # include <sstream>
-# include <cstdlib>
-# include <exception>
 #endif  //#ifndef _PreComp_
 
-#include <QGraphicsView>
-
+# include <App/Document.h>
 # include <App/DocumentObject.h>
-# include <Base/Exception.h>
-#include <Base/Console.h>
-#include <Base/Type.h>
+# include <Base/Console.h>
+# include <Base/Type.h>
 # include <Gui/Action.h>
 # include <Gui/Application.h>
 # include <Gui/BitmapFactory.h>
 # include <Gui/Command.h>
 # include <Gui/Control.h>
-# include <Gui/Document.h>
-# include <Gui/Selection.h>
 # include <Gui/MainWindow.h>
-# include <Gui/FileDialog.h>
-# include <Gui/ViewProvider.h>
+# include <Gui/Selection.h>
+# include <Gui/SelectionObject.h>
 
-# include <Mod/Part/App/PartFeature.h>
-
-# include <Mod/TechDraw/App/DrawViewPart.h>
-# include <Mod/TechDraw/App/DrawProjGroupItem.h>
-# include <Mod/TechDraw/App/DrawProjGroup.h>
-# include <Mod/TechDraw/App/DrawViewDimension.h>
+# include <Mod/TechDraw/App/Cosmetic.h>
 # include <Mod/TechDraw/App/DrawViewBalloon.h>
-# include <Mod/TechDraw/App/DrawDimHelper.h>
-# include <Mod/TechDraw/App/LandmarkDimension.h>
+# include <Mod/TechDraw/App/DrawViewDimension.h>
 # include <Mod/TechDraw/App/DrawPage.h>
+# include <Mod/TechDraw/App/DrawViewPart.h>
 # include <Mod/TechDraw/App/DrawUtil.h>
-# include <Mod/TechDraw/App/Geometry.h>
 # include <Mod/TechDraw/App/Preferences.h>
 
-#include <Mod/TechDraw/Gui/QGVPage.h> //needed ?
-
-
 #include "DrawGuiUtil.h"
-#include "MDIViewPage.h"
-#include "ViewProviderPage.h"
-#include "TaskLinkDim.h"
-
-#include "TaskSelectLineAttributes.h"
 #include "TaskCustomizeFormat.h"
+#include "TaskSelectLineAttributes.h"
 
-/////////////////////////////
-#include <Mod/TechDraw/App/DrawViewSection.h>  // needed
-#include <Mod/TechDraw/App/DrawProjGroupItem.h>
-/////////////////////////////
 
 using namespace TechDrawGui;
 using namespace TechDraw;
@@ -129,7 +106,7 @@ void execInsertPrefixChar(Gui::Command* cmd, std::string prefixChar) {
         for (auto selected : selection) {
             auto object = selected.getObject();
             if (object->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
-                auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selected.getObject());
+                auto dim = static_cast<TechDraw::DrawViewDimension*>(selected.getObject());
                 std::string formatSpec = dim->FormatSpec.getStrValue();
                 formatSpec = prefixChar + formatSpec;
                 dim->FormatSpec.setValue(formatSpec);
@@ -179,8 +156,8 @@ CmdTechDrawExtensionInsertSquare::CmdTechDrawExtensionInsertSquare()
 {
     sAppModule      = "TechDraw";
     sGroup          = QT_TR_NOOP("TechDraw");
-    sMenuText       = QT_TR_NOOP("Insert '〼' Prefix");
-    sToolTipText    = QT_TR_NOOP("Insert a '〼' symbol at the beginning of the dimension text:<br>\
+    sMenuText       = QT_TR_NOOP("Insert '□' Prefix");
+    sToolTipText    = QT_TR_NOOP("Insert a '□' symbol at the beginning of the dimension text:<br>\
 - Select one or more dimensions<br>\
 - Click this tool");
     sWhatsThis      = "TechDraw_ExtensionInsertSquare";
@@ -191,7 +168,7 @@ CmdTechDrawExtensionInsertSquare::CmdTechDrawExtensionInsertSquare()
 void CmdTechDrawExtensionInsertSquare::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    execInsertPrefixChar(this, "〼");
+    execInsertPrefixChar(this, "□");    //□ white square U+25A1
 }
 
 bool CmdTechDrawExtensionInsertSquare::isActive(void)
@@ -214,7 +191,7 @@ void execRemovePrefixChar(Gui::Command* cmd) {
         {
             auto object = selected.getObject();
             if (object->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
-                auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selected.getObject());
+                auto dim = static_cast<TechDraw::DrawViewDimension*>(selected.getObject());
                 std::string formatSpec = dim->FormatSpec.getStrValue();
                 int pos = formatSpec.find("%.");
                 if (pos != 0)
@@ -292,8 +269,8 @@ void CmdTechDrawExtensionInsertPrefixGroup::activated(int iMsg)
     case 0:                 //insert "⌀" as prefix
         execInsertPrefixChar(this, "⌀");
         break;
-    case 1:                 //insert "〼" as prefix
-        execInsertPrefixChar(this, "〼");
+    case 1:                 //insert "□" as prefix
+        execInsertPrefixChar(this, "□");
         break;
     case 2:                 //remove prefix characters
         execRemovePrefixChar(this);
@@ -349,9 +326,9 @@ void CmdTechDrawExtensionInsertPrefixGroup::languageChange()
 - Click this tool"));
     arc1->setStatusTip(arc1->text());
     QAction* arc2 = a[1];
-    arc2->setText(QApplication::translate("CmdTechDrawExtensionInsertSquare", "Insert '〼' Prefix"));
+    arc2->setText(QApplication::translate("CmdTechDrawExtensionInsertSquare", "Insert '□' Prefix"));
     arc2->setToolTip(QApplication::translate("CmdTechDrawExtensionInsertSquare",
-"Insert a '〼' symbol at the beginning of the dimension text:<br>\
+"Insert a '□' symbol at the beginning of the dimension text:<br>\
 - Select one or more dimensions<br>\
 - Click this tool"));
     arc2->setStatusTip(arc2->text());
@@ -384,7 +361,7 @@ void execIncreaseDecreaseDecimal(Gui::Command* cmd, int delta) {
         for (auto selected : selection) {
             auto object = selected.getObject();
             if (object->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
-                auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selected.getObject());
+                auto dim = static_cast<TechDraw::DrawViewDimension*>(selected.getObject());
                 std::string formatSpec = dim->FormatSpec.getStrValue();
                 std::string searchStr("%.");
                 int numFound = formatSpec.find(searchStr) + 2;
@@ -1933,7 +1910,7 @@ void execCreateHorizChamferDimension(Gui::Command* cmd) {
             float alpha = round(abs(atan(dy / dx)) * Pi180);
             std::string sAlpha = std::to_string((int)alpha);
             std::string formatSpec = dim->FormatSpec.getStrValue();
-            formatSpec = formatSpec + "x" + sAlpha + "°";
+            formatSpec = formatSpec + " x" + sAlpha + "°";
             dim->FormatSpec.setValue(formatSpec);
             objFeat->requestPaint();
             cmd->getSelection().clearSelection();
@@ -2002,7 +1979,7 @@ void execCreateVertChamferDimension(Gui::Command* cmd) {
             float alpha = round(abs(atan(dx / dy)) * Pi180);
             std::string sAlpha = std::to_string((int)alpha);
             std::string formatSpec = dim->FormatSpec.getStrValue();
-            formatSpec = formatSpec + "x" + sAlpha + "°";
+            formatSpec = formatSpec + " x" + sAlpha + "°";
             dim->FormatSpec.setValue(formatSpec);
             objFeat->requestPaint();
             cmd->getSelection().clearSelection();
@@ -2201,7 +2178,7 @@ void CmdTechDrawExtensionCreateLengthArc::activated(int iMsg) {
             float alpha = acos((radVec1 * radVec2) / (radVec1.Length() * radVec2.Length()));
             float arcLength = alpha * radius / scale;
             dim->Arbitrary.setValue(true);
-            formatSpec << "∩ " << arcLength;
+            formatSpec << "◠ " << arcLength;
             dim->FormatSpec.setValue(formatSpec.str());
             objFeat->refreshCEGeoms();
             objFeat->requestPaint();
@@ -2229,9 +2206,9 @@ CmdTechDrawExtensionCustomizeFormat::CmdTechDrawExtensionCustomizeFormat()
 {
     sAppModule      = "TechDraw";
     sGroup          = QT_TR_NOOP("TechDraw");
-    sMenuText       = QT_TR_NOOP("Customize format label");
-    sToolTipText    = QT_TR_NOOP("Select a dimension or a balloon\n\
-    - click this tool\n\
+    sMenuText       = QT_TR_NOOP("Customize Format Label");
+    sToolTipText    = QT_TR_NOOP("Select a dimension or a balloon<br>\
+    - click this tool<br>\
     - edit the Format field, using the keyboard and/or the special buttons");
     sWhatsThis      = "TechDraw_ExtensionCustomizeFormat";
     sStatusTip      = sToolTipText;
@@ -2305,7 +2282,7 @@ namespace TechDrawGui {
     {
         TechDraw::DrawPage* page = objFeat->findParentPage();
         std::string PageName = page->getNameInDocument();
-        TechDraw::DrawViewDimension* dim = 0;
+        TechDraw::DrawViewDimension* dim = nullptr;
         std::string FeatName = cmd->getUniqueObjectName("Dimension");
         std::vector<App::DocumentObject*> objs;
         std::vector<std::string> subs;
@@ -2367,7 +2344,7 @@ namespace TechDrawGui {
         for (auto selected : selection) {
             auto object = selected.getObject();
             if (object->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId())) {
-                auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selected.getObject());
+                auto dim = static_cast<TechDraw::DrawViewDimension*>(selected.getObject());
                 std::string dimType = dim->Type.getValueAsString();
                 if (dimType == needDimType)
                     validDimension.push_back(dim);

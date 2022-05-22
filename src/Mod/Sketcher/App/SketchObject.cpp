@@ -65,15 +65,16 @@
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <App/Expression.h>
 #include <App/FeaturePythonPyImp.h>
+#include <App/ObjectIdentifier.h>
+#include <App/OriginFeature.h>
 #include <App/Part.h>
 #include <Base/Writer.h>
 #include <Base/Reader.h>
 #include <Base/Tools.h>
 #include <Base/Console.h>
 #include <Base/Vector3D.h>
-
-#include <App/OriginFeature.h>
 
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Part/App/DatumFeature.h>
@@ -102,9 +103,9 @@ PROPERTY_SOURCE(Sketcher::SketchObject, Part::Part2DObject)
 
 SketchObject::SketchObject()
 {
-    ADD_PROPERTY_TYPE(Geometry,        (0)  ,"Sketch",(App::PropertyType)(App::Prop_None),"Sketch geometry");
-    ADD_PROPERTY_TYPE(Constraints,     (0)  ,"Sketch",(App::PropertyType)(App::Prop_None),"Sketch constraints");
-    ADD_PROPERTY_TYPE(ExternalGeometry,(0,0),"Sketch",(App::PropertyType)(App::Prop_None),"Sketch external geometry");
+    ADD_PROPERTY_TYPE(Geometry,        (nullptr)  ,"Sketch",(App::PropertyType)(App::Prop_None),"Sketch geometry");
+    ADD_PROPERTY_TYPE(Constraints,     (nullptr)  ,"Sketch",(App::PropertyType)(App::Prop_None),"Sketch constraints");
+    ADD_PROPERTY_TYPE(ExternalGeometry,(nullptr,nullptr),"Sketch",(App::PropertyType)(App::Prop_None),"Sketch external geometry");
     ADD_PROPERTY_TYPE(FullyConstrained, (false),"Sketch",(App::PropertyType)(App::Prop_Output|App::Prop_ReadOnly |App::Prop_Hidden),"Sketch is fully constrained");
 
     Geometry.setOrderRelevant(true);
@@ -1806,7 +1807,8 @@ int SketchObject::fillet(int GeoId1, int GeoId2,
         int filletId;
         std::unique_ptr<Part::GeomArcOfCircle> arc(
             Part::createFilletGeometry(lineSeg1, lineSeg2, filletCenter, radius));
-        if (!arc) return -1;
+        if (!arc)
+            return -1;
 
         // calculate intersection and distances before we invalidate lineSeg1 and lineSeg2
         if (!find2DLinesIntersection(lineSeg1, lineSeg2, intersection)) {
@@ -2679,8 +2681,6 @@ int SketchObject::trim(int GeoId, const Base::Vector3d& point)
             firstParam = bsp->getFirstParameter();
             lastParam = bsp->getLastParameter();
         }
-        else
-            return -1;
 
         double pointParam, point1Param, point2Param;
         if(!getIntersectionParameters(geo, point, pointParam, point1, point1Param, point2, point2Param))
@@ -3012,7 +3012,7 @@ int SketchObject::split(int GeoId, const Base::Vector3d &point)
     std::vector<Constraint *> newConstraints;
 
     Base::Vector3d startPoint, endPoint, splitPoint;
-    double radius, startAngle, endAngle, splitAngle;
+    double radius, startAngle, endAngle, splitAngle=0.0;
     unsigned int longestPart = 0;
 
 
@@ -3327,7 +3327,7 @@ bool SketchObject::isExternalAllowed(App::Document *pDoc, App::DocumentObject *p
     App::Part* part_this = App::Part::getPartOfObject(this);
     App::Part* part_obj = App::Part::getPartOfObject(pObj);
     if (part_this == part_obj){ //either in the same part, or in the root of document
-        if (body_this == NULL) {
+        if (body_this == nullptr) {
             return true;
         } else if (body_this == body_obj) {
             return true;
@@ -3386,7 +3386,7 @@ bool SketchObject::isCarbonCopyAllowed(App::Document *pDoc, App::DocumentObject 
     App::Part* part_this = App::Part::getPartOfObject(this);
     App::Part* part_obj = App::Part::getPartOfObject(pObj);
     if (part_this == part_obj){ //either in the same part, or in the root of document
-        if (body_this != NULL) {
+        if (body_this != nullptr) {
             if (body_this != body_obj) {
                 if (!this->allowOtherBody) {
                     if (rsn)
@@ -7682,7 +7682,7 @@ std::string SketchObject::validateExpression(const App::ObjectIdentifier &path, 
 {
     const App::Property * prop = path.getProperty();
 
-    assert(expr != 0);
+    assert(expr != nullptr);
 
     if (!prop)
         return "Property not found";
@@ -7721,7 +7721,7 @@ double SketchObject::calculateAngleViaPoint(int GeoId1, int GeoId2, double px, d
     const Part::Geometry *p1=this->getGeometry(GeoId1);
     const Part::Geometry *p2=this->getGeometry(GeoId2);
 
-    if(p1!=0 && p2!=0) {
+    if(p1!=nullptr && p2!=nullptr) {
         int i1 = sk.addGeometry(this->getGeometry(GeoId1));
         int i2 = sk.addGeometry(this->getGeometry(GeoId2));
 
@@ -8209,7 +8209,7 @@ bool SketchObject::constraintHasExpression(int constrid) const
 
     App::PropertyExpressionEngine::ExpressionInfo expr_info = this->getExpression(spath);
 
-    return (expr_info.expression != 0);
+    return (expr_info.expression != nullptr);
 }
 
 
@@ -8230,7 +8230,7 @@ int SketchObject::port_reversedExternalArcs(bool justAnalyze)
 
     for(std::size_t ic = 0; ic<newVals.size(); ic++){//ic = index of constraint
         bool affected=false;
-        Constraint *constNew = 0;
+        Constraint *constNew = nullptr;
         for(int ig=1; ig<=3; ig++){//cycle through constraint.first, second, third
             int geoId = 0;
             Sketcher::PointPos posId = PointPos::none;

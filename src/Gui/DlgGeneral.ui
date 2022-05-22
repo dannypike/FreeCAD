@@ -57,55 +57,68 @@
           <number>6</number>
          </property>
          <item row="0" column="0">
-          <layout class="QHBoxLayout">
-           <property name="spacing">
-            <number>6</number>
+          <widget class="QLabel" name="TextLabel1_4">
+           <property name="text">
+            <string>Change language:</string>
            </property>
-           <property name="leftMargin">
-            <number>0</number>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="Languages">
+           <property name="toolTip">
+            <string>Language of the application's user interface</string>
            </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="TextLabel1_4">
-             <property name="text">
-              <string>Change language:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="Languages">
-             <property name="toolTip">
-              <string>Language of the application's user interface</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          </widget>
          </item>
          <item row="1" column="0">
-          <widget class="Gui::PrefCheckBox" name="SubstituteDecimal">
-           <property name="toolTip">
-            <string>If enabled, numerical keypad decimal separator will be substituted with locale separator</string>
-           </property>
+          <widget class="QLabel" name="TextLabel1_5">
            <property name="text">
-            <string>Substitute decimal separator (needs restart)</string>
+            <string>Number format:</string>
            </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="Gui::PrefComboBox" name="UseLocaleFormatting">
            <property name="prefEntry" stdset="0">
-            <cstring>SubstituteDecimalSeparator</cstring>
+            <cstring>UseLocaleFormatting</cstring>
            </property>
            <property name="prefPath" stdset="0">
             <cstring>General</cstring>
            </property>
+           <item>
+            <property name="text">
+             <string>Operating system</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Selected language</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>C/POSIX</string>
+            </property>
+           </item>
           </widget>
          </item>
-        </layout>
+         <item row="1" column="2">
+           <widget class="Gui::PrefCheckBox" name="SubstituteDecimal">
+            <property name="toolTip">
+             <string>If enabled, numerical keypad decimal separator will be substituted with locale separator</string>
+            </property>
+            <property name="text">
+             <string>Substitute decimal separator (needs restart)</string>
+            </property>
+            <property name="prefEntry" stdset="0">
+             <cstring>SubstituteDecimalSeparator</cstring>
+            </property>
+            <property name="prefPath" stdset="0">
+             <cstring>General</cstring>
+            </property>
+           </widget>
+          </item>
+         </layout>
        </widget>
       </item>
       <item>
@@ -157,11 +170,11 @@
              <attribute name="horizontalHeaderCascadingSectionResizes">
               <bool>true</bool>
              </attribute>
-             <attribute name="horizontalHeaderMinimumSectionSize">
-              <number>30</number>
-             </attribute>
              <attribute name="horizontalHeaderDefaultSectionSize">
               <number>100</number>
+             </attribute>
+             <attribute name="horizontalHeaderMinimumSectionSize">
+              <number>30</number>
              </attribute>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
@@ -169,11 +182,11 @@
              <attribute name="verticalHeaderVisible">
               <bool>false</bool>
              </attribute>
-             <attribute name="verticalHeaderMinimumSectionSize">
-              <number>16</number>
-             </attribute>
              <attribute name="verticalHeaderDefaultSectionSize">
               <number>24</number>
+             </attribute>
+             <attribute name="verticalHeaderMinimumSectionSize">
+              <number>16</number>
              </attribute>
              <column>
               <property name="text">
@@ -509,27 +522,6 @@ this according to your screen size or personal taste</string>
          <property name="spacing">
           <number>6</number>
          </property>
-         <item row="2" column="0">
-          <widget class="Gui::PrefCheckBox" name="SplashScreen">
-           <property name="toolTip">
-            <string>A Splash screen is a small loading window that is shown
-when FreeCAD is launching. If this option is checked, FreeCAD will
-display the splash screen</string>
-           </property>
-           <property name="text">
-            <string>Enable splash screen at start up</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-           <property name="prefEntry" stdset="0">
-            <cstring>ShowSplasher</cstring>
-           </property>
-           <property name="prefPath" stdset="0">
-            <cstring>General</cstring>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0">
           <layout class="QGridLayout">
            <property name="leftMargin">
@@ -564,7 +556,28 @@ after FreeCAD launches</string>
            </item>
           </layout>
          </item>
-        </layout>
+        <item row="2" column="0">
+          <widget class="Gui::PrefCheckBox" name="SplashScreen">
+           <property name="toolTip">
+            <string>A Splash screen is a small loading window that is shown
+when FreeCAD is launching. If this option is checked, FreeCAD will
+display the splash screen</string>
+           </property>
+           <property name="text">
+            <string>Enable splash screen at start up</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+           <property name="prefEntry" stdset="0">
+            <cstring>ShowSplasher</cstring>
+           </property>
+           <property name="prefPath" stdset="0">
+            <cstring>General</cstring>
+           </property>
+          </widget>
+         </item>
+         </layout>
        </widget>
       </item>
      </layout>
@@ -582,6 +595,11 @@ after FreeCAD launches</string>
   <customwidget>
    <class>Gui::PrefCheckBox</class>
    <extends>QCheckBox</extends>
+   <header>Gui/PrefWidgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>Gui::PrefComboBox</class>
+   <extends>QComboBox</extends>
    <header>Gui/PrefWidgets.h</header>
   </customwidget>
  </customwidgets>

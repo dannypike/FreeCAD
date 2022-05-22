@@ -391,7 +391,7 @@ void Geometry::createNewTag()
     static bool seeded = false;
 
     if (!seeded) {
-        ran.seed(static_cast<unsigned int>(std::time(0)));
+        ran.seed(static_cast<unsigned int>(std::time(nullptr)));
         seeded = true;
     }
     static boost::uuids::basic_random_generator<boost::mt19937> gen(&ran);
@@ -1881,9 +1881,20 @@ Geometry *GeomTrimmedCurve::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomTrimmedCurve::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomTrimmedCurve::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomTrimmedCurve::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomTrimmedCurve::getMemSize (void) const
+{
+    return sizeof(Geom_TrimmedCurve);
+}
+
+void GeomTrimmedCurve::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomTrimmedCurve::Save");
+}
+
+void GeomTrimmedCurve::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomTrimmedCurve::Restore");
+}
 
 PyObject *GeomTrimmedCurve::getPyObject(void)
 {
@@ -4174,9 +4185,20 @@ const Handle(Geom_Geometry)& GeomOffsetCurve::handle() const
 }
 
 // Persistence implementer
-unsigned int GeomOffsetCurve::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomOffsetCurve::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomOffsetCurve::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomOffsetCurve::getMemSize (void) const
+{
+    return sizeof(Geom_OffsetCurve);
+}
+
+void GeomOffsetCurve::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomOffsetCurve::Save");
+}
+
+void GeomOffsetCurve::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomOffsetCurve::Restore");
+}
 
 PyObject *GeomOffsetCurve::getPyObject(void)
 {
@@ -4244,6 +4266,12 @@ bool GeomSurface::normal(double u, double v, gp_Dir& dir) const
         return true;
 
     return false;
+}
+
+gp_Vec GeomSurface::getDN(double u, double v, int Nu, int Nv) const
+{
+    Handle(Geom_Surface) s = Handle(Geom_Surface)::DownCast(handle());
+    return s->DN(u, v, Nu, Nv);
 }
 
 bool GeomSurface::isUmbillic(double u, double v) const
@@ -4337,9 +4365,27 @@ Geometry *GeomBezierSurface::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomBezierSurface::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomBezierSurface::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomBezierSurface::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomBezierSurface::getMemSize (void) const
+{
+    unsigned int size = sizeof(Geom_BezierSurface);
+    if (!mySurface.IsNull()) {
+        unsigned int poles = mySurface->NbUPoles();
+        poles *= mySurface->NbVPoles();
+        size += poles * sizeof(gp_Pnt);
+        size += poles * sizeof(Standard_Real);
+    }
+    return size;
+}
+
+void GeomBezierSurface::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomBezierSurface::Save");
+}
+
+void GeomBezierSurface::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomBezierSurface::Restore");
+}
 
 PyObject *GeomBezierSurface::getPyObject(void)
 {
@@ -4396,9 +4442,31 @@ Geometry *GeomBSplineSurface::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomBSplineSurface::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomBSplineSurface::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomBSplineSurface::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomBSplineSurface::getMemSize (void) const
+{
+    unsigned int size = sizeof(Geom_BSplineSurface);
+    if (!mySurface.IsNull()) {
+        size += mySurface->NbUKnots() * sizeof(Standard_Real);
+        size += mySurface->NbUKnots() * sizeof(Standard_Integer);
+        size += mySurface->NbVKnots() * sizeof(Standard_Real);
+        size += mySurface->NbVKnots() * sizeof(Standard_Integer);
+        unsigned int poles = mySurface->NbUPoles();
+        poles *= mySurface->NbVPoles();
+        size += poles * sizeof(gp_Pnt);
+        size += poles * sizeof(Standard_Real);
+    }
+    return size;
+}
+
+void GeomBSplineSurface::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomBSplineSurface::Save");
+}
+
+void GeomBSplineSurface::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomBSplineSurface::Restore");
+}
 
 PyObject *GeomBSplineSurface::getPyObject(void)
 {
@@ -4443,9 +4511,20 @@ Geometry *GeomCylinder::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomCylinder::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomCylinder::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomCylinder::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomCylinder::getMemSize (void) const
+{
+    return sizeof(Geom_CylindricalSurface);
+}
+
+void GeomCylinder::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomCylinder::Save");
+}
+
+void GeomCylinder::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomCylinder::Restore");
+}
 
 PyObject *GeomCylinder::getPyObject(void)
 {
@@ -4490,13 +4569,68 @@ Geometry *GeomCone::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomCone::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomCone::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomCone::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomCone::getMemSize (void) const
+{
+    return sizeof(Geom_ConicalSurface);
+}
+
+void GeomCone::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomCone::Save");
+}
+
+void GeomCone::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomCone::Restore");
+}
 
 PyObject *GeomCone::getPyObject(void)
 {
     return new ConePy(static_cast<GeomCone*>(this->clone()));
+}
+
+gp_Vec GeomCone::getDN(double u, double v, int Nu, int Nv) const
+{
+    // Copied from ElSLib::ConeDN() and applied the needed fix
+    auto ElSLib__ConeDN = [](const Standard_Real U,
+                             const Standard_Real V,
+                             const gp_Ax3& Pos,
+                             const Standard_Real Radius,
+                             const Standard_Real SAngle,
+                             const Standard_Integer Nu,
+                             const Standard_Integer Nv)
+    {
+       gp_XYZ Xdir = Pos.XDirection().XYZ();
+       gp_XYZ Ydir = Pos.YDirection().XYZ();
+       gp_XYZ ZDir = Pos.Direction ().XYZ();
+       Standard_Real Um = U + Nu * M_PI_2;  // M_PI * 0.5
+       Xdir.Multiply(cos(Um));
+       Ydir.Multiply(sin(Um));
+       Xdir.Add(Ydir);
+       if(Nv == 0) {
+         Xdir.Multiply(Radius + V * sin(SAngle));
+         if(Nu == 0) Xdir.Add(Pos.Location().XYZ());
+         return gp_Vec(Xdir);
+       }
+       else if(Nv == 1) {
+         Xdir.Multiply(sin(SAngle));
+         ZDir.Multiply(cos(SAngle));
+         Xdir.Add(ZDir);
+         return gp_Vec(Xdir);
+       }
+       return gp_Vec(0.0,0.0,0.0);
+    };
+
+    // Workaround for cones to get the correct derivatives
+    // https://forum.freecadweb.org/viewtopic.php?f=10&t=66677
+    Handle(Geom_ConicalSurface) s = Handle(Geom_ConicalSurface)::DownCast(handle());
+    Standard_RangeError_Raise_if (Nu + Nv < 1 || Nu < 0 || Nv < 0, " ");
+    if (Nv > 1) {
+        return gp_Vec (0.0, 0.0, 0.0);
+    }
+    else {
+      return ElSLib__ConeDN(u, v, s->Position(), s->RefRadius(), s->SemiAngle(), Nu, Nv);
+    }
 }
 
 // -------------------------------------------------
@@ -4537,9 +4671,20 @@ Geometry *GeomToroid::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomToroid::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomToroid::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomToroid::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomToroid::getMemSize (void) const
+{
+    return sizeof(Geom_ToroidalSurface);
+}
+
+void GeomToroid::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomToroid::Save");
+}
+
+void GeomToroid::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomToroid::Restore");
+}
 
 PyObject *GeomToroid::getPyObject(void)
 {
@@ -4584,9 +4729,20 @@ Geometry *GeomSphere::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomSphere::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomSphere::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomSphere::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomSphere::getMemSize (void) const
+{
+    return sizeof(Geom_SphericalSurface);
+}
+
+void GeomSphere::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomSphere::Save");
+}
+
+void GeomSphere::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomSphere::Restore");
+}
 
 PyObject *GeomSphere::getPyObject(void)
 {
@@ -4631,9 +4787,20 @@ Geometry *GeomPlane::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomPlane::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomPlane::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomPlane::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomPlane::getMemSize (void) const
+{
+    return sizeof(Geom_Plane);
+}
+
+void GeomPlane::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomPlane::Save");
+}
+
+void GeomPlane::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomPlane::Restore");
+}
 
 PyObject *GeomPlane::getPyObject(void)
 {
@@ -4680,9 +4847,20 @@ Geometry *GeomOffsetSurface::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomOffsetSurface::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomOffsetSurface::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomOffsetSurface::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomOffsetSurface::getMemSize (void) const
+{
+    return sizeof(Geom_OffsetSurface);
+}
+
+void GeomOffsetSurface::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomOffsetSurface::Save");
+}
+
+void GeomOffsetSurface::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomOffsetSurface::Restore");
+}
 
 PyObject *GeomOffsetSurface::getPyObject(void)
 {
@@ -4790,9 +4968,20 @@ Geometry *GeomTrimmedSurface::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomTrimmedSurface::getMemSize (void) const {assert(0); return 0;/* not implemented yet */}
-void         GeomTrimmedSurface::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomTrimmedSurface::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomTrimmedSurface::getMemSize (void) const
+{
+    return sizeof(Geom_RectangularTrimmedSurface);
+}
+
+void GeomTrimmedSurface::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomTrimmedSurface::Save");
+}
+
+void GeomTrimmedSurface::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomTrimmedSurface::Restore");
+}
 
 PyObject *GeomTrimmedSurface::getPyObject(void)
 {
@@ -4839,9 +5028,20 @@ Geometry *GeomSurfaceOfRevolution::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomSurfaceOfRevolution::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomSurfaceOfRevolution::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomSurfaceOfRevolution::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomSurfaceOfRevolution::getMemSize (void) const
+{
+    return sizeof(Geom_SurfaceOfRevolution);
+}
+
+void GeomSurfaceOfRevolution::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomSurfaceOfRevolution::Save");
+}
+
+void GeomSurfaceOfRevolution::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomSurfaceOfRevolution::Restore");
+}
 
 PyObject *GeomSurfaceOfRevolution::getPyObject(void)
 {
@@ -4888,9 +5088,20 @@ Geometry *GeomSurfaceOfExtrusion::copy(void) const
 }
 
 // Persistence implementer
-unsigned int GeomSurfaceOfExtrusion::getMemSize (void) const               {assert(0); return 0;/* not implemented yet */}
-void         GeomSurfaceOfExtrusion::Save       (Base::Writer &/*writer*/) const {assert(0);          /* not implemented yet */}
-void         GeomSurfaceOfExtrusion::Restore    (Base::XMLReader &/*reader*/)    {assert(0);          /* not implemented yet */}
+unsigned int GeomSurfaceOfExtrusion::getMemSize (void) const
+{
+   return sizeof(Geom_SurfaceOfLinearExtrusion);
+}
+
+void GeomSurfaceOfExtrusion::Save(Base::Writer &/*writer*/) const
+{
+    throw Base::NotImplementedError("GeomSurfaceOfExtrusion::Save");
+}
+
+void GeomSurfaceOfExtrusion::Restore(Base::XMLReader &/*reader*/)
+{
+    throw Base::NotImplementedError("GeomSurfaceOfExtrusion::Restore");
+}
 
 PyObject *GeomSurfaceOfExtrusion::getPyObject(void)
 {
@@ -5034,7 +5245,7 @@ GeomArcOfCircle *createFilletGeometry(const GeomLineSegment *lineSeg1, const Geo
     Base::Vector3d corner;
     if (!Part::find2DLinesIntersection(lineSeg1, lineSeg2, corner))
         // Parallel Lines so return null pointer
-        return 0;
+        return nullptr;
 
     Base::Vector3d dir1 = lineSeg1->getEndPoint() - lineSeg1->getStartPoint();
     Base::Vector3d dir2 = lineSeg2->getEndPoint() - lineSeg2->getStartPoint();

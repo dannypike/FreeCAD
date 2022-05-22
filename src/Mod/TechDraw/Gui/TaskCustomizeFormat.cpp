@@ -39,6 +39,8 @@
 #include <Base/Tools.h>
 #include <Base/UnitsApi.h>
 
+#include <App/DocumentObject.h>
+
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
@@ -53,7 +55,6 @@
 # include <Mod/TechDraw/App/DrawViewBalloon.h>
 # include <Mod/TechDraw/Gui/ui_TaskCustomizeFormat.h>
 
-#include "DrawGuiStd.h"
 #include "PreferencesGui.h"
 #include "QGVPage.h"
 #include "QGIView.h"
@@ -108,17 +109,15 @@ void TaskCustomizeFormat::changeEvent(QEvent *e)
 void TaskCustomizeFormat::setUiEdit()
 {
     setWindowTitle(tr("Customize Format"));
-    if (selectedObject->isDerivedFrom(TechDraw::DrawViewDimension::getClassTypeId()))
+    if (auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selectedObject))
     {
-        auto dim = dynamic_cast<TechDraw::DrawViewDimension*>(selectedObject);
         isDimension = true;
         std::string dimText = dim->FormatSpec.getStrValue();
         dimRawValue = dim->getDimValue();
         ui->leFormat->setText(Base::Tools::fromStdString(dimText));
     }
-    else
+    else if (auto balloon = dynamic_cast<TechDraw::DrawViewBalloon*>(selectedObject))
     {
-        auto balloon = dynamic_cast<TechDraw::DrawViewBalloon*>(selectedObject);
         isDimension = false;
         std::string balloonText = balloon->Text.getStrValue();
         ui->leFormat->setText(Base::Tools::fromStdString(balloonText));
@@ -191,9 +190,12 @@ void TaskCustomizeFormat::onSymbolClicked()
 {
     // Slot: a symbol PushButton has been clicked
     QObject* senderObj(this->sender());
-    QPushButton* pressedButton = dynamic_cast<QPushButton*>(senderObj);
-    QString pbText = pressedButton->text();
-    ui->leFormat->insert(pbText);
+    QPushButton* pressedButton = qobject_cast<QPushButton*>(senderObj);
+    if (pressedButton)
+    {
+        QString pbText = pressedButton->text();
+        ui->leFormat->insert(pbText);
+    }
 }
 
 void TaskCustomizeFormat::onFormatChanged()
@@ -245,7 +247,7 @@ TaskDlgCustomizeFormat::TaskDlgCustomizeFormat(App::DocumentObject * object)
 {
     widget  = new TaskCustomizeFormat(object);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("TechDraw_ExtensionCustomizeFormat"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

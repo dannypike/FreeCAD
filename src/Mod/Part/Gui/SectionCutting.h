@@ -49,10 +49,16 @@ protected Q_SLOTS:
     void onCutXHSsliderMoved(int);
     void onCutYHSsliderMoved(int);
     void onCutZHSsliderMoved(int);
+    void onCutXHSChanged(int);
+    void onCutYHSChanged(int);
+    void onCutZHSChanged(int);
     void onFlipXclicked();
     void onFlipYclicked();
     void onFlipZclicked();
     void onRefreshCutPBclicked();
+    void onCutColorclicked();
+    void onTransparencySliderMoved(int);
+    void onTransparencyChanged(int);
 
 public:
     void reject();

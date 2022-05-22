@@ -85,7 +85,7 @@ class AppExport PropertyQuantityConstraint : public PropertyQuantity
     TYPESYSTEM_HEADER();
 
 public:
-    PropertyQuantityConstraint(void):_ConstStruct(0){}
+    PropertyQuantityConstraint(void):_ConstStruct(nullptr){}
     virtual ~PropertyQuantityConstraint(){}
 
     /// Constraint methods
@@ -250,6 +250,18 @@ class AppExport PropertyForce: public PropertyQuantity
 public:
     PropertyForce(void);
     virtual ~PropertyForce(){}
+};
+
+/** ElectricPotential property
+ * This is a property for electric potentials. It is basically a float
+ * property. On the Gui it has a quantity of Volt.
+ */
+class AppExport PropertyElectricPotential : public PropertyQuantity
+{
+    TYPESYSTEM_HEADER();
+public:
+    PropertyElectricPotential(void);
+    virtual ~PropertyElectricPotential() {}
 };
 
 /** VacuumPermittivity property

@@ -20,10 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 #ifndef _PreComp_
-# include "InventorAll.h"
+# include <Inventor/SbViewportRegion.h>
+# include <Inventor/SoPickedPoint.h>
+# include <Inventor/actions/SoGetBoundingBoxAction.h>
+# include <Inventor/errors/SoDebugError.h>
+# include <Inventor/nodes/SoSeparator.h>
+# include <Inventor/nodes/SoCamera.h>
+# include <Inventor/nodes/SoOrthographicCamera.h>
+# include <Inventor/nodes/SoPerspectiveCamera.h>
+# include <Inventor/projectors/SbSphereSheetProjector.h>
 # include <QAction>
 # include <QActionGroup>
 # include <QApplication>
@@ -40,6 +47,7 @@
 #include "MouseSelection.h"
 #include "SoMouseWheelEvent.h"
 #include "View3DInventorViewer.h"
+
 
 using namespace Gui;
 
@@ -317,7 +325,8 @@ void NavigationStyle::seekToPoint(const SbVec3f& scenepos)
 SbBool NavigationStyle::lookAtPoint(const SbVec2s screenpos)
 {
     SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-    if (cam == nullptr) return false;
+    if (cam == nullptr)
+        return false;
 
     SoRayPickAction rpaction(viewer->getSoRenderManager()->getViewportRegion());
     rpaction.setPoint(screenpos);
@@ -339,7 +348,8 @@ SbBool NavigationStyle::lookAtPoint(const SbVec2s screenpos)
 void NavigationStyle::lookAtPoint(const SbVec3f& pos)
 {
     SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-    if (cam == nullptr) return;
+    if (cam == nullptr)
+        return;
     PRIVATE(this)->rotationCenterFound = false;
 
     // Find global coordinates of focal point.
@@ -397,7 +407,8 @@ void NavigationStyle::lookAtPoint(const SbVec3f& pos)
 void NavigationStyle::setCameraOrientation(const SbRotation& rot, SbBool moveToCenter)
 {
     SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-    if (cam == nullptr) return;
+    if (cam == nullptr)
+        return;
 
     // Find global coordinates of focal point.
     SbVec3f direction;
@@ -476,7 +487,8 @@ void NavigationStyleP::viewAnimationCB(void * data, SoSensor * sensor)
         SbRotation slerp = SbRotation::slerp(that->spinRotation, PRIVATE(that)->endRotation, step);
         SbVec3f focalpoint = (1.0f-step)*PRIVATE(that)->focal1 + step*PRIVATE(that)->focal2;
         SoCamera* cam = that->viewer->getSoRenderManager()->getCamera();
-        if (!cam) return; // no camera
+        if (!cam) // no camera
+            return;
 
         SbVec3f direction;
         cam->orientation.setValue(slerp);
@@ -500,7 +512,8 @@ void NavigationStyleP::viewAnimationCB(void * data, SoSensor * sensor)
 void NavigationStyle::boxZoom(const SbBox2s& box)
 {
     SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-    if (!cam) return; // no camera
+    if (!cam) // no camera
+        return;
     const SbViewportRegion & vp = viewer->getSoRenderManager()->getViewportRegion();
     SbViewVolume vv = cam->getViewVolume(vp.getViewportAspectRatio());
 
@@ -543,7 +556,8 @@ void NavigationStyle::viewAll()
     SoGetBoundingBoxAction action(viewer->getSoRenderManager()->getViewportRegion());
     action.apply(viewer->getSceneGraph());
     SbBox3f box = action.getBoundingBox();
-    if (box.isEmpty()) return;
+    if (box.isEmpty())
+        return;
 
 #if 0
     // check whether the box is very wide or tall, if not do nothing
@@ -556,7 +570,8 @@ void NavigationStyle::viewAll()
 #endif
 
     SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-    if (!cam) return;
+    if (!cam)
+        return;
 
     SbViewVolume  vol = cam->getViewVolume();
     if (vol.ulf == vol.llf)
@@ -607,7 +622,8 @@ void NavigationStyle::viewAll()
  */
 void NavigationStyle::reorientCamera(SoCamera * cam, const SbRotation & rot)
 {
-    if (cam == nullptr) return;
+    if (cam == nullptr)
+        return;
 
     // Find global coordinates of focal point.
     SbVec3f direction;
@@ -626,8 +642,10 @@ void NavigationStyle::reorientCamera(SoCamera * cam, const SbRotation & rot)
 void NavigationStyle::panCamera(SoCamera * cam, float aspectratio, const SbPlane & panplane,
                                 const SbVec2f & currpos, const SbVec2f & prevpos)
 {
-    if (cam == nullptr) return; // can happen for empty scenegraph
-    if (currpos == prevpos) return; // useless invocation
+    if (cam == nullptr) // can happen for empty scenegraph
+        return;
+    if (currpos == prevpos) // useless invocation
+        return;
 
 
     // Find projection points for the last and current mouse coordinates.
@@ -685,7 +703,8 @@ void NavigationStyle::panToCenter(const SbPlane & pplane, const SbVec2f & currpo
  */
 void NavigationStyle::zoom(SoCamera * cam, float diffvalue)
 {
-    if (cam == nullptr) return; // can happen for empty scenegraph
+    if (cam == nullptr) // can happen for empty scenegraph
+        return;
     SoType t = cam->getTypeId();
     SbName tname = t.getName();
 
@@ -882,7 +901,8 @@ SbVec3f NavigationStyle::getFocalPoint() const
  */
 void NavigationStyle::spin(const SbVec2f & pointerpos)
 {
-    if (this->log.historysize < 2) return;
+    if (this->log.historysize < 2)
+        return;
     assert(this->spinprojector != nullptr);
 
     const SbViewportRegion & vp = viewer->getSoRenderManager()->getViewportRegion();
@@ -1042,7 +1062,8 @@ void NavigationStyle::saveCursorPosition(const SoEvent * const ev)
         float ratio = vp.getViewportAspectRatio();
 
         SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-        if (!cam) return; // no camera
+        if (!cam) // no camera
+            return;
         SbViewVolume vv = cam->getViewVolume(ratio);
 
         SbLine line;
@@ -1061,7 +1082,8 @@ void NavigationStyle::saveCursorPosition(const SoEvent * const ev)
         float ratio = vp.getViewportAspectRatio();
 
         SoCamera* cam = viewer->getSoRenderManager()->getCamera();
-        if (!cam) return; // no camera
+        if (!cam) // no camera
+            return;
 
         SoGetBoundingBoxAction action(viewer->getSoRenderManager()->getViewportRegion());
         action.apply(viewer->getSceneGraph());
@@ -1179,7 +1201,8 @@ SbBool NavigationStyle::isAnimating() const
  */
 void NavigationStyle::startAnimating(const SbVec3f& axis, float velocity)
 {
-    if (!isAnimationEnabled()) return;
+    if (!isAnimationEnabled())
+        return;
 
     this->prevRedrawTime = SbTime::getTimeOfDay();
     this->spinincrement = SbRotation::identity();
@@ -1307,7 +1330,7 @@ void NavigationStyle::abortSelection()
     if (mouseSelection) {
         mouseSelection->releaseMouseModel(true);
         delete mouseSelection;
-        mouseSelection = 0;
+        mouseSelection = nullptr;
     }
 }
 
@@ -1388,7 +1411,9 @@ void NavigationStyle::syncModifierKeys(const SoEvent * const ev)
 void NavigationStyle::setViewingMode(const ViewerMode newmode)
 {
     const ViewerMode oldmode = this->currentmode;
-    if (newmode == oldmode) { return; }
+    if (newmode == oldmode) {
+        return;
+    }
 
     switch (newmode) {
     case DRAGGING:
@@ -1492,14 +1517,17 @@ SbBool NavigationStyle::processEvent(const SoEvent * const ev)
 SbBool NavigationStyle::processSoEvent(const SoEvent * const ev)
 {
     bool processed = false;
+    bool offeredtoViewerEventBase = false;
 
     //handle mouse wheel zoom
     if (ev->isOfType(SoMouseWheelEvent::getClassTypeId())) {
         const SoMouseWheelEvent * const event = static_cast<const SoMouseWheelEvent *>(ev);
         processed = processWheelEvent(event);
+        viewer->processSoEventBase(ev);
+        offeredtoViewerEventBase = true;
     }
 
-    if (!processed) {
+    if (!processed && !offeredtoViewerEventBase) {
         processed = viewer->processSoEventBase(ev);
     }
 
@@ -1511,7 +1539,9 @@ void NavigationStyle::syncWithEvent(const SoEvent * const ev)
     // Events when in "ready-to-seek" mode are ignored, except those
     // which influence the seek mode itself -- these are handled further
     // up the inheritance hierarchy.
-    if (this->isSeekMode()) { return; }
+    if (this->isSeekMode()) {
+        return;
+    }
 
     const SoType type(ev->getTypeId());
 

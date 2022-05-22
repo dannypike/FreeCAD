@@ -36,6 +36,7 @@
 #include <Gui/Selection.h>
 
 #include <Mod/TechDraw/App/DrawLeaderLine.h>
+#include <Mod/TechDraw/App/DrawProjGroupItem.h>
 #include <Mod/TechDraw/App/DrawViewDetail.h>
 #include <Mod/TechDraw/App/DrawViewSection.h>
 
@@ -103,7 +104,7 @@ bool ViewProviderProjGroup::setEdit(int ModNum)
     Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
     TaskDlgProjGroup *projDlg = qobject_cast<TaskDlgProjGroup *>(dlg);
     if (projDlg && projDlg->getViewProvider() != this)
-        projDlg = 0; // another sketch left open its task panel
+        projDlg = nullptr; // another sketch left open its task panel
 
     // clear the selection (convenience)
     Gui::Selection().clearSelection();

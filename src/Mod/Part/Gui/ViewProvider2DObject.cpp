@@ -25,7 +25,6 @@
 
 #ifndef _PreComp_
 # include <cfloat>
-# include <Python.h>
 
 # include <Standard_math.hxx>
 
@@ -56,7 +55,7 @@ using namespace std;
 //**************************************************************************
 // Construction/Destruction
 
-const char* ViewProvider2DObjectGrid::GridStyleEnums[]= {"Dashed","Light",NULL};
+const char* ViewProvider2DObjectGrid::GridStyleEnums[]= {"Dashed","Light",nullptr};
 App::PropertyQuantityConstraint::Constraints ViewProvider2DObjectGrid::GridSizeRange = {0.001,DBL_MAX,1.0};
 
 PROPERTY_SOURCE(PartGui::ViewProvider2DObjectGrid, PartGui::ViewProvider2DObject)
@@ -247,7 +246,8 @@ void ViewProvider2DObjectGrid::updateData(const App::Property* prop)
     if (prop->getTypeId() == Part::PropertyPartShape::getClassTypeId()) {
         if (GridAutoSize.getValue()) {
             Base::BoundBox3d bbox = static_cast<const Part::PropertyPartShape*>(prop)->getBoundingBox();
-            if (!bbox.IsValid()) return;
+            if (!bbox.IsValid())
+                return;
             Gui::coinRemoveAllChildren(GridRoot);
             Base::Placement place = static_cast<const Part::PropertyPartShape*>(prop)->getComplexData()->getPlacement();
             place.invert();

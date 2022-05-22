@@ -20,10 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <cctype>
 # include <QApplication>
 # include <QFileInfo>
 # include <QMessageBox>
@@ -33,6 +33,8 @@
 #endif
 
 #include <App/AutoTransaction.h>
+#include <App/ComplexGeoData.h>
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Transactions.h>
@@ -50,6 +52,7 @@
 #include "Control.h"
 #include "FileDialog.h"
 #include "MainWindow.h"
+#include "MDIView.h"
 #include "Selection.h"
 #include "Thumbnail.h"
 #include "Tree.h"
@@ -59,7 +62,8 @@
 #include "ViewProviderDocumentObjectGroup.h"
 #include "WaitCursor.h"
 
-FC_LOG_LEVEL_INIT("Gui",true,true)
+
+FC_LOG_LEVEL_INIT("Gui", true, true)
 
 using namespace Gui;
 namespace bp = boost::placeholders;
@@ -121,9 +125,11 @@ struct DocumentP
     Connection connectTransactionRemove;
     Connection connectTouchedObject;
     Connection connectChangePropertyEditor;
+    Connection connectChangeDocument;
 
     typedef boost::signals2::shared_connection_block ConnectionBlock;
     ConnectionBlock connectActObjectBlocker;
+    ConnectionBlock connectChangeDocumentBlocker;
 };
 
 } // namespace Gui
@@ -145,10 +151,10 @@ Document::Document(App::Document* pcDocument,Application * app)
     d->_isTransacting = false;
     d->_pcAppWnd = app;
     d->_pcDocument = pcDocument;
-    d->_editViewProvider = 0;
-    d->_editingObject = 0;
-    d->_editViewProviderParent = 0;
-    d->_editingViewer = 0;
+    d->_editViewProvider = nullptr;
+    d->_editingObject = nullptr;
+    d->_editViewProviderParent = nullptr;
+    d->_editingViewer = nullptr;
     d->_editMode = 0;
 
     // Setup the connections
@@ -177,6 +183,10 @@ Document::Document(App::Document* pcDocument,Application * app)
 
     d->connectChangePropertyEditor = pcDocument->signalChangePropertyEditor.connect
         (boost::bind(&Gui::Document::slotChangePropertyEditor, this, bp::_1, bp::_2));
+    d->connectChangeDocument = d->_pcDocument->signalChanged.connect // use the same slot function
+        (boost::bind(&Gui::Document::slotChangePropertyEditor, this, bp::_1, bp::_2));
+    d->connectChangeDocumentBlocker = boost::signals2::shared_connection_block
+        (d->connectChangeDocument, true);
     d->connectFinishRestoreObject = pcDocument->signalFinishRestoreObject.connect
         (boost::bind(&Gui::Document::slotFinishRestoreObject, this, bp::_1));
     d->connectExportObjects = pcDocument->signalExportViewObjects.connect
@@ -242,6 +252,7 @@ Document::~Document()
     d->connectTransactionRemove.disconnect();
     d->connectTouchedObject.disconnect();
     d->connectChangePropertyEditor.disconnect();
+    d->connectChangeDocument.disconnect();
 
     // e.g. if document gets closed from within a Python command
     d->_isClosing = true;
@@ -293,8 +304,8 @@ bool Document::setEdit(Gui::ViewProvider* p, int ModNum, const char *subname)
     if(!subname || !subname[0]) {
         // No subname reference is given, we try to extract one from the current
         // selection in order to obtain the correct transformation matrix below
-        auto sels = Gui::Selection().getCompleteSelection(false);
-        App::DocumentObject *parentObj = 0;
+        auto sels = Gui::Selection().getCompleteSelection(ResolveMode::NoResolve);
+        App::DocumentObject *parentObj = nullptr;
         for(auto &sel : sels) {
             if(!sel.pObject || !sel.pObject->getNameInDocument())
                 continue;
@@ -302,13 +313,13 @@ bool Document::setEdit(Gui::ViewProvider* p, int ModNum, const char *subname)
                 parentObj = sel.pObject;
             else if(parentObj!=sel.pObject) {
                 FC_LOG("Cannot deduce subname for editing, more than one parent?");
-                parentObj = 0;
+                parentObj = nullptr;
                 break;
             }
             auto sobj = parentObj->getSubObject(sel.SubName);
             if(!sobj || (sobj!=obj && sobj->getLinkedObject(true)!= obj)) {
                 FC_LOG("Cannot deduce subname for editing, subname mismatch");
-                parentObj = 0;
+                parentObj = nullptr;
                 break;
             }
             _subname = sel.SubName;
@@ -364,7 +375,7 @@ bool Document::setEdit(Gui::ViewProvider* p, int ModNum, const char *subname)
     //         d->_editingTransform = ext->globalGroupPlacement().toMatrix();
     //     }
     // }
-    auto sobj = obj->getSubObject(subname,0,&d->_editingTransform);
+    auto sobj = obj->getSubObject(subname,nullptr,&d->_editingTransform);
     if(!sobj || !sobj->getNameInDocument()) {
         FC_ERR("Invalid sub object '" << obj->getFullName()
                 << '.' << (subname?subname:"") << "'");
@@ -411,9 +422,9 @@ bool Document::setEdit(Gui::ViewProvider* p, int ModNum, const char *subname)
     d->_editMode = ModNum;
     d->_editViewProvider = svp->startEditing(ModNum);
     if(!d->_editViewProvider) {
-        d->_editViewProviderParent = 0;
+        d->_editViewProviderParent = nullptr;
         d->_editObjs.clear();
-        d->_editingObject = 0;
+        d->_editingObject = nullptr;
         FC_LOG("object '" << sobj->getFullName() << "' refuse to edit");
         return false;
     }
@@ -447,7 +458,7 @@ void Document::setEditingTransform(const Base::Matrix4D &mat) {
 }
 
 void Document::resetEdit(void) {
-    Application::Instance->setEditDocument(0);
+    Application::Instance->setEditDocument(nullptr);
 }
 
 void Document::_resetEdit(void)
@@ -470,7 +481,7 @@ void Document::_resetEdit(void)
             auto vpd = static_cast<ViewProviderDocumentObject*>(d->_editViewProvider);
             vpd->getDocument()->signalResetEdit(*vpd);
         }
-        d->_editViewProvider = 0;
+        d->_editViewProvider = nullptr;
 
         // The logic below is not necessary anymore, because this method is
         // changed into a private one,  _resetEdit(). And the exposed
@@ -489,12 +500,12 @@ void Document::_resetEdit(void)
 #endif
         App::GetApplication().closeActiveTransaction();
     }
-    d->_editViewProviderParent = 0;
-    d->_editingViewer = 0;
+    d->_editViewProviderParent = nullptr;
+    d->_editingViewer = nullptr;
     d->_editObjs.clear();
-    d->_editingObject = 0;
+    d->_editingObject = nullptr;
     if(Application::Instance->editDocument() == this)
-        Application::Instance->setEditDocument(0);
+        Application::Instance->setEditDocument(nullptr);
 }
 
 ViewProvider *Document::getInEdit(ViewProviderDocumentObject **parentVp,
@@ -512,7 +523,7 @@ ViewProvider *Document::getInEdit(ViewProviderDocumentObject **parentVp,
             return d->_editViewProvider;
     }
 
-    return 0;
+    return nullptr;
 }
 
 void Document::setInEdit(ViewProviderDocumentObject *parentVp, const char *subname) {
@@ -603,7 +614,7 @@ ViewProvider *Document::getViewProviderByName(const char* name) const
             return it2->second;
     }
 
-    return 0;
+    return nullptr;
 }
 
 bool Document::isShow(const char* name)
@@ -667,7 +678,7 @@ void Document::slotNewObject(const App::DocumentObject& Obj)
             } else if (cName!=Obj.getViewProviderName() && !pcProvider->allowOverride(Obj)) {
                 FC_WARN("View provider type '" << cName << "' does not support " << Obj.getFullName());
                 delete base;
-                pcProvider = 0;
+                pcProvider = nullptr;
                 cName = Obj.getViewProviderName();
             } else
                 break;
@@ -733,7 +744,8 @@ void Document::slotDeletedObject(const App::DocumentObject& Obj)
 
     // cycling to all views of the document
     ViewProvider* viewProvider = getViewProvider(&Obj);
-    if(!viewProvider) return;
+    if(!viewProvider)
+        return;
 
     if (d->_editViewProvider==viewProvider || d->_editViewProviderParent==viewProvider)
         _resetEdit();
@@ -741,7 +753,7 @@ void Document::slotDeletedObject(const App::DocumentObject& Obj)
         auto editDoc = Application::Instance->editDocument();
         if(editDoc->d->_editViewProvider==viewProvider ||
            editDoc->d->_editViewProviderParent==viewProvider)
-            Application::Instance->setEditDocument(0);
+            Application::Instance->setEditDocument(nullptr);
     }
 
     handleChildren3D(viewProvider,true);
@@ -774,7 +786,7 @@ void Document::beforeDelete() {
            (vp && vp->getDocument()==this) ||
            (vpp && vpp->getDocument()==this))
         {
-            Application::Instance->setEditDocument(0);
+            Application::Instance->setEditDocument(nullptr);
         }
     }
     for(auto &v : d->_ViewProviderMap)
@@ -798,7 +810,7 @@ void Document::slotChangedObject(const App::DocumentObject& Obj, const App::Prop
             {
                 Base::Matrix4D mat;
                 auto sobj = d->_editViewProviderParent->getObject()->getSubObject(
-                                                        d->_editSubname.c_str(),0,&mat);
+                                                        d->_editSubname.c_str(),nullptr,&mat);
                 if(sobj == d->_editingObject && d->_editingTransform!=mat) {
                     d->_editingTransform = mat;
                     d->_editingViewer->setEditingTransform(d->_editingTransform);
@@ -917,7 +929,7 @@ void Document::slotSkipRecompute(const App::Document& doc, const std::vector<App
        App::GetApplication().getActiveDocument()!=&doc ||
        !doc.testStatus(App::Document::AllowPartialRecompute))
         return;
-    App::DocumentObject *obj = 0;
+    App::DocumentObject *obj = nullptr;
     auto editDoc = Application::Instance->editDocument();
     if(editDoc) {
         auto vp = dynamic_cast<ViewProviderDocumentObject*>(editDoc->getInEdit());
@@ -983,7 +995,7 @@ ViewProviderDocumentObject* Document::getViewProviderByPathFromTail(SoPath * pat
         }
     }
 
-    return 0;
+    return nullptr;
 }
 
 ViewProviderDocumentObject* Document::getViewProviderByPathFromHead(SoPath * path) const
@@ -997,16 +1009,16 @@ ViewProviderDocumentObject* Document::getViewProviderByPathFromHead(SoPath * pat
         }
     }
 
-    return 0;
+    return nullptr;
 }
 
 ViewProviderDocumentObject *Document::getViewProvider(SoNode *node) const {
     if(!node || !node->isOfType(SoSeparator::getClassTypeId()))
-        return 0;
+        return nullptr;
     auto it = d->_CoinMap.find(static_cast<SoSeparator*>(node));
     if(it!=d->_CoinMap.end())
         return it->second;
-    return 0;
+    return nullptr;
 }
 
 std::vector<std::pair<ViewProviderDocumentObject*,int> > Document::getViewProvidersByPath(SoPath * path) const
@@ -1439,7 +1451,7 @@ void Document::RestoreDocFile(Base::Reader &reader)
         if(ppReturn && ppReturn[0]) {
             saveCameraSettings(ppReturn);
             try {
-                const char** pReturnIgnore=0;
+                const char** pReturnIgnore=nullptr;
                 std::list<MDIView*> mdi = getMDIViews();
                 for (std::list<MDIView*>::iterator it = mdi.begin(); it != mdi.end(); ++it) {
                     if ((*it)->onHasMsg("SetCamera"))
@@ -1561,7 +1573,7 @@ void Document::SaveDocFile (Base::Writer &writer) const
     std::list<MDIView*> mdi = getMDIViews();
     for (std::list<MDIView*>::iterator it = mdi.begin(); it != mdi.end(); ++it) {
         if ((*it)->onHasMsg("GetCamera")) {
-            const char* ppReturn=0;
+            const char* ppReturn=nullptr;
             (*it)->onMsg("GetCamera",&ppReturn);
             if(saveCameraSettings(ppReturn))
                 break;
@@ -1722,18 +1734,18 @@ void Document::addRootObjectsToGroup(const std::vector<App::DocumentObject*>& ob
 MDIView *Document::createView(const Base::Type& typeId)
 {
     if (!typeId.isDerivedFrom(MDIView::getClassTypeId()))
-        return 0;
+        return nullptr;
 
     std::list<MDIView*> theViews = this->getMDIViewsOfType(typeId);
     if (typeId == View3DInventor::getClassTypeId()) {
 
-        QtGLWidget* shareWidget = 0;
+        QtGLWidget* shareWidget = nullptr;
         // VBO rendering doesn't work correctly when we don't share the OpenGL widgets
         if (!theViews.empty()) {
             View3DInventor* firstView = static_cast<View3DInventor*>(theViews.front());
             shareWidget = qobject_cast<QtGLWidget*>(firstView->getViewer()->getGLWidget());
 
-            const char *ppReturn = 0;
+            const char *ppReturn = nullptr;
             firstView->onMsg("GetCamera",&ppReturn);
             saveCameraSettings(ppReturn);
         }
@@ -1776,20 +1788,20 @@ MDIView *Document::createView(const Base::Type& typeId)
         view3D->getViewer()->redraw();
 
         if (!cameraSettings.empty()) {
-            const char *ppReturn = 0;
+            const char *ppReturn = nullptr;
             view3D->onMsg(cameraSettings.c_str(),&ppReturn);
         }
 
         getMainWindow()->addWindow(view3D);
         return view3D;
     }
-    return 0;
+    return nullptr;
 }
 
 Gui::MDIView* Document::cloneView(Gui::MDIView* oldview)
 {
     if (!oldview)
-        return 0;
+        return nullptr;
 
     if (oldview->getTypeId() == View3DInventor::getClassTypeId()) {
         View3DInventor* view3D = new View3DInventor(this, getMainWindow());
@@ -1835,7 +1847,7 @@ Gui::MDIView* Document::cloneView(Gui::MDIView* oldview)
         return view3D;
     }
 
-    return 0;
+    return nullptr;
 }
 
 const char *Document::getCameraSettings() const {
@@ -1891,7 +1903,7 @@ void Document::detachView(Gui::BaseView* pcView, bool bPassiv)
             // decouple a passive view
             std::list<Gui::BaseView*>::iterator it = d->passiveViews.begin();
             while (it != d->passiveViews.end()) {
-                (*it)->setDocument(0);
+                (*it)->setDocument(nullptr);
                 it = d->passiveViews.begin();
             }
 
@@ -1937,6 +1949,8 @@ void Document::onRelabel(void)
     for (it = d->passiveViews.begin();it != d->passiveViews.end();++it) {
         (*it)->onRelabel(this);
     }
+
+    d->connectChangeDocumentBlocker.unblock();
 }
 
 bool Document::isLastView(void)
@@ -2060,7 +2074,7 @@ std::list<MDIView*> Document::getMDIViewsOfType(const Base::Type& typeId) const
 bool Document::sendMsgToViews(const char* pMsg)
 {
     std::list<Gui::BaseView*>::iterator it;
-    const char** pReturnIgnore=0;
+    const char** pReturnIgnore=nullptr;
 
     for (it = d->baseViews.begin();it != d->baseViews.end();++it) {
         if ((*it)->onMsg(pMsg,pReturnIgnore)) {
@@ -2128,7 +2142,7 @@ MDIView* Document::getActiveView(void) const
         if(windows.contains(*rit) || (*rit)->isDerivedFrom(View3DInventor::getClassTypeId()))
             return *rit;
     }
-    return 0;
+    return nullptr;
 }
 
 MDIView *Document::setActiveView(ViewProviderDocumentObject *vp, Base::Type typeId)
@@ -2223,10 +2237,10 @@ Gui::MDIView* Document::getViewOfNode(SoNode* node) const
             return *it;
     }
 
-    return 0;
+    return nullptr;
 }
 
-Gui::MDIView* Document::getViewOfViewProvider(Gui::ViewProvider* vp) const
+Gui::MDIView* Document::getViewOfViewProvider(const Gui::ViewProvider* vp) const
 {
     return getViewOfNode(vp->getRoot());
 }
@@ -2242,7 +2256,7 @@ Gui::MDIView* Document::getEditingViewOfViewProvider(Gui::ViewProvider* vp) cons
             return *it;
     }
 
-    return 0;
+    return nullptr;
 }
 
 //--------------------------------------------------------------------------

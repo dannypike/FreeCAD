@@ -20,7 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <QDialogButtonBox>
@@ -32,18 +31,16 @@
 # include <QKeySequence>
 # include <QLineEdit>
 # include <QMessageBox>
-# include <QTextStream>
-# include <QVBoxLayout>
 #endif
 
 #include "DlgActionsImp.h"
 #include "ui_DlgActions.h"
 #include "Action.h"
 #include "Application.h"
-#include "Command.h"
 #include "BitmapFactory.h"
-#include "Widgets.h"
+#include "Command.h"
 #include "ui_DlgChooseIcon.h"
+
 
 using namespace Gui::Dialog;
 
@@ -604,7 +601,7 @@ void IconFolders::removeFolder()
 
     addButton->setEnabled(true);
     QPushButton* remove = static_cast<QPushButton*>(sender());
-    QLineEdit* edit = 0;
+    QLineEdit* edit = nullptr;
     for (QList< QPair<QLineEdit*, QPushButton*> >::iterator it = buttonMap.begin(); it != buttonMap.end(); ++it) {
         if (it->second == remove) {
             edit = it->first;

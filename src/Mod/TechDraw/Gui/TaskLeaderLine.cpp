@@ -24,13 +24,15 @@
 
 #ifndef _PreComp_
 #include <cmath>
-#endif // #ifndef _PreComp_
+#endif
 
 #include <QStatusBar>
 #include <QGraphicsScene>
 
 #include <Base/Console.h>
 #include <Base/Tools.h>
+
+#include <App/Document.h>
 
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
@@ -47,11 +49,10 @@
 #include <Mod/TechDraw/App/DrawView.h>
 #include <Mod/TechDraw/App/DrawLeaderLine.h>
 #include <Mod/TechDraw/App/ArrowPropEnum.h>
-//#include <Mod/TechDraw/App/Preferences.h>
 
 #include <Mod/TechDraw/Gui/ui_TaskLeaderLine.h>
 
-#include "DrawGuiStd.h"
+#include "DrawGuiUtil.h"
 #include "PreferencesGui.h"
 #include "QGVPage.h"
 #include "QGIView.h"
@@ -269,7 +270,7 @@ void TaskLeaderLine::setUiPrimary()
         ui->tbBaseView->setText(Base::Tools::fromStdString(baseName));
     }
 
-    ui->pbTracker->setText(QString::fromUtf8("Pick points"));
+    ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Pick points")));
     if (m_haveMdi) {
         ui->pbTracker->setEnabled(true);
         ui->pbCancelEdit->setEnabled(true);
@@ -318,7 +319,7 @@ void TaskLeaderLine::setUiEdit()
         ui->cboxEndSym->setCurrentIndex(m_lineFeat->EndSymbol.getValue());
         connect(ui->cboxEndSym, SIGNAL(currentIndexChanged(int)), this, SLOT(onEndSymbolChanged()));
 
-        ui->pbTracker->setText(QString::fromUtf8("Edit points"));
+        ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Edit points")));
         if (m_haveMdi) {
             ui->pbTracker->setEnabled(true);
             ui->pbCancelEdit->setEnabled(true);
@@ -514,7 +515,7 @@ void TaskLeaderLine::onTrackerClicked(bool b)
             m_tracker->terminateDrawing();
         }
         m_pbTrackerState = TRACKERPICK;
-        ui->pbTracker->setText(QString::fromUtf8("Pick Points"));
+        ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Pick Points")));
         ui->pbCancelEdit->setEnabled(false);
         enableTaskButtons(true);
 
@@ -526,7 +527,7 @@ void TaskLeaderLine::onTrackerClicked(bool b)
             m_qgLine->closeEdit();
         }
         m_pbTrackerState = TRACKERPICK;
-        ui->pbTracker->setText(QString::fromUtf8("Edit Points"));
+        ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Edit Points")));
         ui->pbCancelEdit->setEnabled(false);
         enableTaskButtons(true);
 
@@ -546,7 +547,7 @@ void TaskLeaderLine::onTrackerClicked(bool b)
         QString msg = tr("Pick a starting point for leader line");
         getMainWindow()->statusBar()->show();
         Gui::getMainWindow()->showMessage(msg,3000);
-        ui->pbTracker->setText(QString::fromUtf8("Save Points"));
+        ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Save Points")));
         ui->pbTracker->setEnabled(true);
         ui->pbCancelEdit->setEnabled(true);
         m_pbTrackerState = TRACKERSAVE;
@@ -573,7 +574,7 @@ void TaskLeaderLine::onTrackerClicked(bool b)
                 QString msg = tr("Click and drag markers to adjust leader line");
                 getMainWindow()->statusBar()->show();
                 Gui::getMainWindow()->showMessage(msg,3000);
-                ui->pbTracker->setText(QString::fromUtf8("Save changes"));
+                ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Save changes")));
                 ui->pbTracker->setEnabled(true);
                 ui->pbCancelEdit->setEnabled(true);
                 m_pbTrackerState = TRACKERSAVE;
@@ -590,7 +591,7 @@ void TaskLeaderLine::onTrackerClicked(bool b)
             QString msg = tr("Pick a starting point for leader line");
             getMainWindow()->statusBar()->show();
             Gui::getMainWindow()->showMessage(msg,3000);
-            ui->pbTracker->setText(QString::fromUtf8("Save changes"));
+            ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Save changes")));
             ui->pbTracker->setEnabled(true);
             ui->pbCancelEdit->setEnabled(true);
             m_pbTrackerState = TRACKERSAVE;
@@ -684,7 +685,7 @@ void TaskLeaderLine::onCancelEditClicked(bool b)
     }
 
     m_pbTrackerState = TRACKEREDIT;
-    ui->pbTracker->setText(QString::fromUtf8("Edit points"));
+    ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Edit points")));
     ui->pbCancelEdit->setEnabled(false);
     enableTaskButtons(true);
 
@@ -736,7 +737,7 @@ void TaskLeaderLine::onPointEditComplete(void)
     m_inProgressLock = false;
 
     m_pbTrackerState = TRACKEREDIT;
-    ui->pbTracker->setText(QString::fromUtf8("Edit points"));
+    ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Edit points")));
     ui->pbTracker->setEnabled(true);
     ui->pbCancelEdit->setEnabled(true);
     enableTaskButtons(true);
@@ -753,7 +754,7 @@ void TaskLeaderLine::abandonEditSession(void)
     Gui::getMainWindow()->showMessage(msg,4000);
 
     m_pbTrackerState = TRACKEREDIT;
-    ui->pbTracker->setText(QString::fromUtf8("Edit points"));
+    ui->pbTracker->setText(QT_TRANSLATE_NOOP("Command", QString::fromUtf8("Edit points")));
     enableTaskButtons(true);
     ui->pbTracker->setEnabled(true);
     ui->pbCancelEdit->setEnabled(false);
@@ -806,7 +807,8 @@ bool TaskLeaderLine::accept()
     }
 
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     if (!getCreateMode())  {
 //        removeTracker();
@@ -837,7 +839,8 @@ bool TaskLeaderLine::reject()
     }
 
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     if (getCreateMode() &&
         (m_lineFeat != nullptr) )  {
@@ -870,7 +873,7 @@ TaskDlgLeaderLine::TaskDlgLeaderLine(TechDraw::DrawView* baseFeat,
 {
     widget  = new TaskLeaderLine(baseFeat,page);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/techdraw-LeaderLine"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }
@@ -880,7 +883,7 @@ TaskDlgLeaderLine::TaskDlgLeaderLine(TechDrawGui::ViewProviderLeader* leadVP)
 {
     widget  = new TaskLeaderLine(leadVP);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/techdraw-LeaderLine"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

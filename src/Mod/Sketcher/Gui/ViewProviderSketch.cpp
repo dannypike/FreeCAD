@@ -30,6 +30,7 @@
 # include <Inventor/SbBox3f.h>
 # include <Inventor/SoPickedPoint.h>
 # include <Inventor/details/SoPointDetail.h>
+# include <Inventor/events/SoKeyboardEvent.h>
 # include <Inventor/nodes/SoCamera.h>
 # include <Inventor/SbLine.h>
 # include <Inventor/SbTime.h>
@@ -62,6 +63,7 @@
 #include <Gui/MainWindow.h>
 #include <Gui/MenuManager.h>
 #include <Gui/Selection.h>
+#include <Gui/SelectionObject.h>
 #include <Gui/SoFCUnifiedSelection.h>
 #include <Gui/Utilities.h>
 #include <Gui/View3DInventor.h>
@@ -132,7 +134,7 @@ void ViewProviderSketch::ParameterObserver::updateGridSize(const std::string & s
 
     ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
 
-    Client.GridSize.setValue(Base::Quantity::parse(QString::fromLatin1(hGrp->GetGroup("GridSize")->GetASCII("Hist0", "10.0").c_str())).getValue());
+    Client.GridSize.setValue(Base::Quantity::parse(QString::fromLatin1(hGrp->GetGroup("GridSize")->GetASCII("GridSize", "10.0").c_str())).getValue());
 }
 
 void ViewProviderSketch::ParameterObserver::updateEscapeKeyBehaviour(const std::string & string, App::Property * property)
@@ -165,26 +167,36 @@ void ViewProviderSketch::ParameterObserver::updateRecalculateInitialSolutionWhil
 
 void ViewProviderSketch::ParameterObserver::subscribeToParameters()
 {
-    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
-    hGrp->Attach(this);
+    try {
+        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
+        hGrp->Attach(this);
 
-    ParameterGrp::handle hGrp2 = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher");
-    hGrp2->Attach(this);
+        ParameterGrp::handle hGrp2 = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher");
+        hGrp2->Attach(this);
 
-    ParameterGrp::handle hGrpv = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
-    hGrpv->Attach(this);
+        ParameterGrp::handle hGrpv = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+        hGrpv->Attach(this);
+    }
+    catch(const Base::ValueError & e) { // ensure that if parameter strings are not well-formed, the exception is not propagated
+        Base::Console().Error("ViewProviderSketch: Malformed parameter string: %s\n", e.what());
+    }
 }
 
 void ViewProviderSketch::ParameterObserver::unsubscribeToParameters()
 {
-    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
-    hGrp->Detach(this);
+    try {
+        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
+        hGrp->Detach(this);
 
-    ParameterGrp::handle hGrp2 = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher");
-    hGrp2->Detach(this);
+        ParameterGrp::handle hGrp2 = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher");
+        hGrp2->Detach(this);
 
-    ParameterGrp::handle hGrpv = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
-    hGrpv->Detach(this);
+        ParameterGrp::handle hGrpv = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+        hGrpv->Detach(this);
+    }
+    catch(const Base::ValueError & e) { // ensure that if parameter strings are not well-formed, the exception is not propagated
+        Base::Console().Error("ViewProviderSketch: Malformed parameter string: %s\n", e.what());
+    }
 }
 
 void ViewProviderSketch::ParameterObserver::initParameters()
@@ -270,7 +282,7 @@ PROPERTY_SOURCE_WITH_EXTENSIONS(SketcherGui::ViewProviderSketch, PartGui::ViewPr
 ViewProviderSketch::ViewProviderSketch()
   : SelectionObserver(false),
     Mode(STATUS_NONE),
-    listener(0),
+    listener(nullptr),
     editCoinManager(nullptr),
     pObserver(std::make_unique<ViewProviderSketch::ParameterObserver>(*this)),
     sketchHandler(nullptr)
@@ -511,7 +523,8 @@ void ViewProviderSketch::getProjectingLine(const SbVec2s& pnt, const Gui::View3D
     }
 
     SoCamera* pCam = viewer->getSoRenderManager()->getCamera();
-    if (!pCam) return;
+    if (!pCam)
+        return;
     SbViewVolume  vol = pCam->getViewVolume();
 
     vol.projectPointToLine(SbVec2f(pX,pY), line);
@@ -965,6 +978,19 @@ bool ViewProviderSketch::mouseButtonPressed(int Button, bool pressed, const SbVe
     }
 
     return false;
+}
+
+bool ViewProviderSketch::mouseWheelEvent(int delta, const SbVec2s &cursorPos, const Gui::View3DInventorViewer* viewer)
+{
+    assert(isInEditMode());
+
+    Q_UNUSED(delta);
+    Q_UNUSED(cursorPos);
+    Q_UNUSED(viewer);
+
+    editCoinManager->drawConstraintIcons();
+
+    return true;
 }
 
 void ViewProviderSketch::editDoubleClicked(void)
@@ -2561,6 +2587,11 @@ void ViewProviderSketch::drawEdit(const std::vector<Base::Vector2d> &EditCurve)
     editCoinManager->drawEdit(EditCurve);
 }
 
+void ViewProviderSketch::drawEdit(const std::list<std::vector<Base::Vector2d>> &list)
+{
+    editCoinManager->drawEdit(list);
+}
+
 void ViewProviderSketch::drawEditMarkers(const std::vector<Base::Vector2d> &EditMarkers, unsigned int augmentationlevel)
 {
     editCoinManager->drawEditMarkers(EditMarkers, augmentationlevel);
@@ -2626,7 +2657,7 @@ bool ViewProviderSketch::setEdit(int ModNum)
     Gui::TaskView::TaskDialog *dlg = Gui::Control().activeDialog();
     TaskDlgEditSketch *sketchDlg = qobject_cast<TaskDlgEditSketch *>(dlg);
     if (sketchDlg && sketchDlg->getSketchView() != this)
-        sketchDlg = 0; // another sketch left open its task panel
+        sketchDlg = nullptr; // another sketch left open its task panel
     if (dlg && !sketchDlg) {
         QMessageBox msgBox;
         msgBox.setText(tr("A dialog is already open in the task panel"));
@@ -2675,7 +2706,7 @@ bool ViewProviderSketch::setEdit(int ModNum)
     auto editDoc = Gui::Application::Instance->editDocument();
     App::DocumentObject *editObj = getSketchObject();
     std::string editSubName;
-    ViewProviderDocumentObject *editVp = 0;
+    ViewProviderDocumentObject *editVp = nullptr;
     if(editDoc) {
         editDoc->getInEdit(&editVp,&editSubName);
         if(editVp)
@@ -2973,7 +3004,7 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
     auto editDoc = Gui::Application::Instance->editDocument();
     editDocName.clear();
     if(editDoc) {
-        ViewProviderDocumentObject *parent=0;
+        ViewProviderDocumentObject *parent=nullptr;
         editDoc->getInEdit(&parent,&editSubName);
         if(parent) {
             editDocName = editDoc->getDocument()->getName();
@@ -3071,7 +3102,7 @@ const Sketcher::Sketch &ViewProviderSketch::getSolvedSketch(void) const
 void ViewProviderSketch::deleteSelected()
 {
     std::vector<Gui::SelectionObject> selection;
-    selection = Gui::Selection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
+    selection = Gui::Selection().getSelectionEx(nullptr, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {

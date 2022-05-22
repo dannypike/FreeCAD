@@ -32,7 +32,6 @@
 # include <QThread>
 # include <QTreeWidget>
 # include <QPushButton>
-# include <Python.h>
 # include <Standard_Version.hxx>
 # include <BRepCheck_Analyzer.hxx>
 # include <BRepCheck_Result.hxx>
@@ -191,10 +190,10 @@ QString getBOPCheckString(const BOPAlgo_CheckStatus &status)
 
 ResultEntry::ResultEntry()
 {
-    viewProviderRoot = 0;
-    boxSep = 0;
-    boxSwitch = 0;
-    parent = 0;
+    viewProviderRoot = nullptr;
+    boxSep = nullptr;
+    boxSwitch = nullptr;
+    parent = nullptr;
     children.clear();
     selectionStrings.clear();
 }
@@ -211,10 +210,10 @@ ResultEntry::~ResultEntry()
 void ResultEntry::buildEntryName()
 {
   ResultEntry *parentEntry = this;
-  while(parentEntry->parent != 0)
+  while(parentEntry->parent != nullptr)
   {
       ResultEntry *temp = parentEntry->parent;
-      if (temp->parent == 0)
+      if (temp->parent == nullptr)
         break;
       parentEntry = parentEntry->parent;
   }
@@ -272,7 +271,7 @@ void ResultEntry::buildEntryName()
 
 ResultModel::ResultModel(QObject *parent) : QAbstractItemModel(parent)
 {
-    root = 0;
+    root = nullptr;
 }
 
 ResultModel::~ResultModel()
@@ -608,7 +607,7 @@ void TaskCheckGeometryResults::buildShapeContent(App::DocumentObject *pObject, c
         args.setItem(2, Py::Boolean(advancedShapeContent));
         Py::Module shapecontent(module, true);
         Py::String result(shapecontent.callMemberFunction("buildShapeContent", args));
-        stream << result.as_std_string("ascii");
+        stream << result.as_std_string("utf-8");
     }
     catch (Py::Exception&) {
         Base::PyException e;
@@ -859,10 +858,10 @@ bool TaskCheckGeometryResults::split(QString &input, QString &doc, QString &obje
 QString PartGui::buildSelectionName(const ResultEntry *entry, const TopoDS_Shape &shape)
 {
     const ResultEntry *parentEntry = entry;
-    while(parentEntry->parent != 0)
+    while(parentEntry->parent != nullptr)
     {
         ResultEntry *temp = parentEntry->parent;
-        if (temp->parent == 0)
+        if (temp->parent == nullptr)
           break;
         parentEntry = parentEntry->parent;
     }
@@ -1003,7 +1002,7 @@ void PartGui::goSetupResultUnorientableShapeFace(ResultEntry *entry)
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 TaskCheckGeometryDialog::TaskCheckGeometryDialog()
-    : widget(0), contentLabel(0), okBtn(0), settingsBtn(0), resultsBtn(0)
+    : widget(nullptr), contentLabel(nullptr), okBtn(nullptr), settingsBtn(nullptr), resultsBtn(nullptr)
 {
     ParameterGrp::handle group = App::GetApplication().GetUserParameter().
     GetGroup("BaseApp")->GetGroup("Preferences")->GetGroup("Mod")->GetGroup("Part")->GetGroup("CheckGeometry");
@@ -1014,14 +1013,14 @@ TaskCheckGeometryDialog::TaskCheckGeometryDialog()
 
     taskbox = new Gui::TaskView::TaskBox(
         Gui::BitmapFactory().pixmap("Part_CheckGeometry"),
-        widget->windowTitle(), true, 0);
+        widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 
     contentLabel = new QTextEdit();
     contentLabel->setText(widget->getShapeContentString());
     shapeContentBox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("Part_CheckGeometry"),
-        tr("Shape Content"), true, 0);
+        tr("Shape Content"), true, nullptr);
     shapeContentBox->groupLayout()->addWidget(contentLabel);
     if (!expandShapeContent){
         shapeContentBox->hideGroupBox();
@@ -1029,7 +1028,7 @@ TaskCheckGeometryDialog::TaskCheckGeometryDialog()
     Content.push_back(shapeContentBox);
 
     settingsBox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("Part_CheckGeometry"),
-        tr("Settings"), true, 0);
+        tr("Settings"), true, nullptr);
     Content.push_back(settingsBox);
 
     autoRunCheckBox = new QCheckBox();
@@ -1343,12 +1342,12 @@ TaskCheckGeometryDialog::~TaskCheckGeometryDialog()
   if (widget)
   {
     delete widget;
-    widget = 0;
+    widget = nullptr;
   }
   if (contentLabel)
   {
     delete contentLabel;
-    contentLabel = 0;
+    contentLabel = nullptr;
   }
 }
 

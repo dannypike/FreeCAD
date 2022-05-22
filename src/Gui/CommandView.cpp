@@ -44,6 +44,7 @@
 #endif
 
 #include <App/ComplexGeoDataPy.h>
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/GeoFeature.h>
 #include <App/GeoFeatureGroupExtension.h>
@@ -67,6 +68,7 @@
 #include "NavigationStyle.h"
 #include "SceneInspector.h"
 #include "Selection.h"
+#include "SelectionObject.h"
 #include "SoAxisCrossKit.h"
 #include "SoFCOffscreenRenderer.h"
 #include "SoFCUnifiedSelection.h"
@@ -282,10 +284,10 @@ StdCmdFreezeViews::StdCmdFreezeViews()
   , maxViews(50)
   , savedViews(0)
   , offset(0)
-  , saveView(0)
-  , freezeView(0)
-  , clearView(0)
-  , separator(0)
+  , saveView(nullptr)
+  , freezeView(nullptr)
+  , clearView(nullptr)
+  , separator(nullptr)
 {
     sGroup        = "Standard-View";
     sMenuText     = QT_TR_NOOP("Freeze display");
@@ -336,7 +338,7 @@ void StdCmdFreezeViews::activated(int iMsg)
     }
     else if (iMsg == 3) {
         // Create a new view
-        const char* ppReturn=0;
+        const char* ppReturn=nullptr;
         getGuiApplication()->sendMsgToActiveView("GetCamera",&ppReturn);
 
         QList<QAction*> acts = pcAction->actions();
@@ -456,7 +458,8 @@ void StdCmdFreezeViews::onRestoreViews()
 
     bool ok;
     int scheme = root.attribute(QString::fromLatin1("SchemaVersion")).toInt(&ok);
-    if (!ok) return;
+    if (!ok)
+        return;
     // SchemeVersion "1"
     if (scheme == 1) {
         // read the views, ignore the attribute 'Count'
@@ -1691,7 +1694,8 @@ void StdViewDockUndockFullscreen::activated(int iMsg)
         getMainWindow()->showNormal();
 
     MDIView* view = getMainWindow()->activeWindow();
-    if (!view) return; // no active view
+    if (!view) // no active view
+        return;
 
     // nothing to do when the view is docked and 'Docked' is pressed
     if (iMsg == 0 && view->currentViewMode() == MDIView::Child)
@@ -1706,12 +1710,12 @@ void StdViewDockUndockFullscreen::activated(int iMsg)
         if (!clone)
             return;
 
-        const char* ppReturn = 0;
+        const char* ppReturn = nullptr;
         if (view->onMsg("GetCamera", &ppReturn)) {
             std::string sMsg = "SetCamera ";
             sMsg += ppReturn;
 
-            const char** pReturnIgnore=0;
+            const char** pReturnIgnore=nullptr;
             clone->onMsg(sMsg.c_str(), pReturnIgnore);
         }
 
@@ -1985,7 +1989,7 @@ void StdCmdViewCreate::activated(int iMsg)
 
 bool StdCmdViewCreate::isActive(void)
 {
-    return (getActiveGuiDocument()!=NULL);
+    return (getActiveGuiDocument()!=nullptr);
 }
 
 //===========================================================================
@@ -2165,7 +2169,8 @@ bool StdCmdAxisCross::isActive(void)
         if (_pcAction->isChecked())
             _pcAction->setChecked(false);
     }
-    if (view ) return true;
+    if (view)
+        return true;
     return false;
 
 }
@@ -2277,7 +2282,7 @@ StdCmdViewIvStereoOff::StdCmdViewIvStereoOff()
 void StdCmdViewIvStereoOff::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    doCommand(Command::Gui,"Gui.activeDocument().activeView().setStereoType(\"None\")");
+    doCommand(Command::Gui,"Gui.activeDocument().activeView().setStereoType(\"Mono\")");
 }
 
 bool StdCmdViewIvStereoOff::isActive(void)
@@ -2422,7 +2427,7 @@ void StdCmdViewIvIssueCamPos::activated(int iMsg)
     std::string Temp,Temp2;
     std::string::size_type pos;
 
-    const char* ppReturn=0;
+    const char* ppReturn=nullptr;
     getGuiApplication()->sendMsgToActiveView("GetCamera",&ppReturn);
 
     // remove the #inventor line...
@@ -2514,11 +2519,13 @@ bool StdViewZoomOut::isActive(void)
 {
     return (qobject_cast<View3DInventor*>(getMainWindow()->activeWindow()));
 }
-class SelectionCallbackHandler {    
+
+namespace {
+class SelectionCallbackHandler {
 
 private:
     static std::unique_ptr<SelectionCallbackHandler> currentSelectionHandler;
-    QCursor* prevSelectionCursor;
+    QCursor prevSelectionCursor;
     typedef void (*FnCb)(void * userdata, SoEventCallback * node);
     FnCb fnCb;
     void* userData;
@@ -2529,7 +2536,8 @@ public:
     // Takes the viewer, a selection mode, a cursor, a function pointer to be called on success and a void pointer for user data to be passed to the given function.
     // The selection handler class stores all necessary previous states, registers a event callback and starts the selection in the given mode.    
     // If there is still a selection handler active, this call will generate a message and returns.
-    static void Create(View3DInventorViewer* viewer, View3DInventorViewer::SelectionMode selectionMode, const QCursor& cursor, FnCb doFunction= NULL, void* ud=NULL)
+    static void Create(View3DInventorViewer* viewer, View3DInventorViewer::SelectionMode selectionMode,
+                       const QCursor& cursor, FnCb doFunction= nullptr, void* ud=nullptr)
     {
         if (currentSelectionHandler)
         {
@@ -2542,7 +2550,7 @@ public:
         {
             currentSelectionHandler->userData = ud;
             currentSelectionHandler->fnCb = doFunction;
-            currentSelectionHandler->prevSelectionCursor = new QCursor(viewer->cursor());
+            currentSelectionHandler->prevSelectionCursor = viewer->cursor();
             viewer->setEditingCursor(cursor);
             viewer->addEventCallback(SoEvent::getClassTypeId(),
                 SelectionCallbackHandler::selectionCallback, currentSelectionHandler.get());
@@ -2550,9 +2558,11 @@ public:
             viewer->setSelectionEnabled(false);
             viewer->startSelection(selectionMode);
         }
-    };
+    }
 
-    void* getUserData() { return userData; };
+    void* getUserData() const {
+        return userData;
+    }
 
     // Implements the event handler. In the normal case the provided function is called. 
     // Also supports aborting the selection mode by pressing (releasing) the Escape key. 
@@ -2569,11 +2579,11 @@ public:
             const SoKeyboardEvent * ke = static_cast<const SoKeyboardEvent*>(ev);
             const SbBool press = ke->getState() == SoButtonEvent::DOWN ? true : false;
             if (ke->getKey() == SoKeyboardEvent::ESCAPE) {
-                              
-                if (!press) {                    
+
+                if (!press) {
                     view->abortSelection();
                     restoreState(selectionHandler, view);
-                }                
+                }
             }
         }
         else if (ev->isOfType(SoMouseButtonEvent::getClassTypeId())) {
@@ -2584,7 +2594,8 @@ public:
 
             if (mbe->getButton() == SoMouseButtonEvent::BUTTON1 && mbe->getState() == SoButtonEvent::UP)
             {
-                if (selectionHandler && selectionHandler->fnCb) selectionHandler->fnCb(selectionHandler->getUserData(), n);
+                if (selectionHandler && selectionHandler->fnCb)
+                    selectionHandler->fnCb(selectionHandler->getUserData(), n);
                 restoreState(selectionHandler, view);
             }
             // No other mouse events available from Coin3D to implement right mouse up abort
@@ -2593,14 +2604,18 @@ public:
 
     static void restoreState(SelectionCallbackHandler * selectionHandler, View3DInventorViewer* view)
     {
-        if(selectionHandler) selectionHandler->fnCb = NULL;
-        view->setEditingCursor(*selectionHandler->prevSelectionCursor);
-        view->removeEventCallback(SoEvent::getClassTypeId(), SelectionCallbackHandler::selectionCallback, selectionHandler);
-        view->setSelectionEnabled(selectionHandler->prevSelectionEn);
+        if (selectionHandler)
+        {
+            selectionHandler->fnCb = nullptr;
+            view->setEditingCursor(selectionHandler->prevSelectionCursor);
+            view->removeEventCallback(SoEvent::getClassTypeId(), SelectionCallbackHandler::selectionCallback, selectionHandler);
+            view->setSelectionEnabled(selectionHandler->prevSelectionEn);
+        }
         Application::Instance->commandManager().testActive();
-        currentSelectionHandler = NULL;
+        currentSelectionHandler = nullptr;
     }
 };
+}
 
 std::unique_ptr<SelectionCallbackHandler> SelectionCallbackHandler::currentSelectionHandler = std::unique_ptr<SelectionCallbackHandler>();
 //===========================================================================
@@ -2745,7 +2760,7 @@ static std::vector<std::string> getBoxSelection(
     // DO NOT check this view object Visibility, let the caller do this. Because
     // we may be called by upper object hierarchy that manages our visibility.
 
-    auto bbox3 = vp->getBoundingBox(0,transform);
+    auto bbox3 = vp->getBoundingBox(nullptr,transform);
     if(!bbox3.IsValid())
         return ret;
 
@@ -2771,9 +2786,9 @@ static std::vector<std::string> getBoxSelection(
             return ret;
         }
         Base::PyGILStateLocker lock;
-        PyObject *pyobj = 0;
+        PyObject *pyobj = nullptr;
         Base::Matrix4D matCopy(mat);
-        obj->getSubObject(0,&pyobj,&matCopy,transform,depth);
+        obj->getSubObject(nullptr,&pyobj,&matCopy,transform,depth);
         if(!pyobj)
             return ret;
         Py::Object pyobject(pyobj,true);
@@ -2825,10 +2840,10 @@ static std::vector<std::string> getBoxSelection(
 
     size_t count = 0;
     for(auto &sub : subs) {
-        App::DocumentObject *parent = 0;
+        App::DocumentObject *parent = nullptr;
         std::string childName;
         Base::Matrix4D smat(mat);
-        auto sobj = obj->resolve(sub.c_str(),&parent,&childName,0,0,&smat,transform,depth+1);
+        auto sobj = obj->resolve(sub.c_str(),&parent,&childName,nullptr,nullptr,&smat,transform,depth+1);
         if(!sobj)
             continue;
         int vis;
@@ -2926,7 +2941,7 @@ void StdBoxSelection::activated(int iMsg)
                 SoKeyboardEvent ev;
                 viewer->navigationStyle()->processEvent(&ev);
             }
-            SelectionCallbackHandler::Create(viewer, View3DInventorViewer::Rubberband, QCursor(QPixmap(cursor_box_select), 7, 7), doSelect, NULL);
+            SelectionCallbackHandler::Create(viewer, View3DInventorViewer::Rubberband, QCursor(QPixmap(cursor_box_select), 7, 7), doSelect, nullptr);
             SoNode* root = viewer->getSceneGraph();
             static_cast<Gui::SoFCUnifiedSelection*>(root)->selectionRole.setValue(false);
         }
@@ -3110,20 +3125,20 @@ StdCmdTreeSelectAllInstances::StdCmdTreeSelectAllInstances()
 
 bool StdCmdTreeSelectAllInstances::isActive(void)
 {
-    const auto &sels = Selection().getSelectionEx("*",App::DocumentObject::getClassTypeId(),true,true);
+    const auto &sels = Selection().getSelectionEx("*",App::DocumentObject::getClassTypeId(), ResolveMode::OldStyleElement, true);
     if(sels.empty())
         return false;
     auto obj = sels[0].getObject();
     if(!obj || !obj->getNameInDocument())
         return false;
     return dynamic_cast<ViewProviderDocumentObject*>(
-            Application::Instance->getViewProvider(obj))!=0;
+            Application::Instance->getViewProvider(obj))!=nullptr;
 }
 
 void StdCmdTreeSelectAllInstances::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    const auto &sels = Selection().getSelectionEx("*",App::DocumentObject::getClassTypeId(),true,true);
+    const auto &sels = Selection().getSelectionEx("*",App::DocumentObject::getClassTypeId(), ResolveMode::OldStyleElement, true);
     if(sels.empty())
         return;
     auto obj = sels[0].getObject();
@@ -3254,7 +3269,7 @@ void StdCmdSceneInspector::activated(int iMsg)
     Q_UNUSED(iMsg);
     Gui::Document* doc = Application::Instance->activeDocument();
     if (doc) {
-        static QPointer<Gui::Dialog::DlgInspector> dlg = 0;
+        static QPointer<Gui::Dialog::DlgInspector> dlg = nullptr;
         if (!dlg)
             dlg = new Gui::Dialog::DlgInspector(getMainWindow());
         dlg->setDocument(doc);
@@ -3292,7 +3307,7 @@ bool StdCmdTextureMapping::isActive(void)
 {
     Gui::MDIView* view = getMainWindow()->activeWindow();
     return view && view->isDerivedFrom(Gui::View3DInventor::getClassTypeId())
-                && (Gui::Control().activeDialog()==0);
+                && (Gui::Control().activeDialog()==nullptr);
 }
 
 DEF_STD_CMD(StdCmdDemoMode)
@@ -3312,7 +3327,7 @@ StdCmdDemoMode::StdCmdDemoMode()
 void StdCmdDemoMode::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    static QPointer<QDialog> dlg = 0;
+    static QPointer<QDialog> dlg = nullptr;
     if (!dlg)
         dlg = new Gui::Dialog::DemoMode(getMainWindow());
     dlg->setAttribute(Qt::WA_DeleteOnClose);

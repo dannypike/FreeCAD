@@ -53,7 +53,6 @@
 
 #include <Mod/TechDraw/Gui/ui_TaskCosVertex.h>
 
-#include "DrawGuiStd.h"
 #include "QGVPage.h"
 #include "QGIView.h"
 #include "QGIPrimPath.h"
@@ -319,7 +318,8 @@ void TaskCosVertex::enableTaskButtons(bool b)
 bool TaskCosVertex::accept()
 {
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     removeTracker();
     double x = ui->dsbX->value().getValue();
@@ -339,7 +339,8 @@ bool TaskCosVertex::accept()
 bool TaskCosVertex::reject()
 {
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     removeTracker();
     m_trackerMode = QGTracker::TrackerMode::None;
@@ -361,7 +362,7 @@ TaskDlgCosVertex::TaskDlgCosVertex(TechDraw::DrawViewPart* baseFeat,
 {
     widget  = new TaskCosVertex(baseFeat, page);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/techdraw-LeaderLine"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

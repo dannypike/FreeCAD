@@ -79,11 +79,13 @@
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **********************************************************************/
+
 #include <PreCompiled.h>
+
 #include <Windows.h>
 #include <tchar.h>
 #include <stdio.h>
-#include <stdlib.h>
+
 #pragma comment(lib, "version.lib")  // for "VerQueryValue"
 #pragma warning(disable:4826)
 
@@ -240,7 +242,8 @@ DWORD64
 
 static void MyStrCpy(char* szDest, size_t nMaxDestSize, const char* szSrc)
 {
-  if (nMaxDestSize <= 0) return;
+  if (nMaxDestSize <= 0)
+      return;
   if (strlen(szSrc) < nMaxDestSize)
   {
     strcpy_s(szDest, nMaxDestSize, szSrc);

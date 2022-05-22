@@ -20,30 +20,28 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 #ifndef _PreComp_
-# include <QGridLayout>
 # include <QApplication>
-# include <QMenu>
 # include <QContextMenuEvent>
+# include <QGridLayout>
+# include <QMenu>
 # include <QTextCursor>
 # include <QTextStream>
 # include <QTime>
-# include <QDockWidget>
-# include <QPointer>
 #endif
 
 #include <Base/Interpreter.h>
+
 #include "ReportView.h"
+#include "Application.h"
+#include "BitmapFactory.h"
 #include "DockWindowManager.h"
 #include "FileDialog.h"
 #include "PythonConsole.h"
 #include "PythonConsolePy.h"
-#include "BitmapFactory.h"
-#include "MainWindow.h"
-#include "Application.h"
 #include "Tools.h"
+
 
 using namespace Gui;
 using namespace Gui::DockWnd;
@@ -363,12 +361,12 @@ public:
     {
         if (replace_stdout) {
             Py_DECREF(replace_stdout);
-            replace_stdout = 0;
+            replace_stdout = nullptr;
         }
 
         if (replace_stderr) {
             Py_DECREF(replace_stderr);
-            replace_stderr = 0;
+            replace_stderr = nullptr;
         }
     }
 

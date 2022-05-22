@@ -353,13 +353,11 @@ void QGIDatumLabel::setToleranceString()
         m_tolTextUnder->setPlainText(QString());
         return;
     }
-    m_tolTextOver->show();
-    m_tolTextUnder->show();
 
     std::pair<std::string, std::string> labelTexts, unitTexts;
 
     if (dim->ArbitraryTolerances.getValue()) {
-        labelTexts = dim->getFormattedToleranceValues(1); //just the number pref/spec/suf
+        labelTexts = dim->getFormattedToleranceValues(1);  //copy tolerance spec
         unitTexts.first = "";
         unitTexts.second = "";
     } else {
@@ -368,13 +366,23 @@ void QGIDatumLabel::setToleranceString()
             unitTexts.first = "";
             unitTexts.second = "";
         } else {
-            labelTexts = dim->getFormattedToleranceValues(1); //just the number pref/spec/suf
+            labelTexts = dim->getFormattedToleranceValues(1); // prefix value [unit] postfix
             unitTexts  = dim->getFormattedToleranceValues(2); //just the unit
         }
     }
 
-    m_tolTextUnder->setPlainText(QString::fromUtf8(labelTexts.first.c_str()) + QString::fromUtf8(unitTexts.first.c_str()));
-    m_tolTextOver->setPlainText(QString::fromUtf8(labelTexts.second.c_str()) + QString::fromUtf8(unitTexts.second.c_str()));
+    if (labelTexts.first.empty()) {
+        m_tolTextUnder->hide();
+    } else {
+        m_tolTextUnder->setPlainText(QString::fromUtf8(labelTexts.first.c_str()));
+        m_tolTextUnder->show();
+    }
+    if (labelTexts.second.empty()) {
+        m_tolTextOver->hide();
+    }else {
+        m_tolTextOver->setPlainText(QString::fromUtf8(labelTexts.second.c_str()));
+        m_tolTextOver->show();
+    }
 
     return;
 } 
@@ -382,7 +390,12 @@ void QGIDatumLabel::setToleranceString()
 void QGIDatumLabel::setUnitString(QString t)
 {
     prepareGeometryChange();
-    m_unitText->setPlainText(t);
+    if (t.isEmpty()) {
+        m_unitText->hide();
+    } else {
+        m_unitText->setPlainText(t);
+        m_unitText->show();
+    }
 } 
 
 
@@ -507,6 +520,8 @@ QGIViewDimension::QGIViewDimension() :
 
     setZValue(ZVALUE::DIMENSION);         //note: this won't paint dimensions over another View if it stacks
                                           //above this Dimension's parent view.   need Layers?
+    m_border->hide();
+    m_label->hide();
 }
 
 QVariant QGIViewDimension::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -551,7 +566,7 @@ void QGIViewDimension::hover(bool state)
 void QGIViewDimension::setViewPartFeature(TechDraw::DrawViewDimension *obj)
 {
 //    Base::Console().Message("QGIVD::setViewPartFeature()\n");
-    if(obj == 0)
+    if(obj == nullptr)
         return;
 
     setViewFeature(static_cast<TechDraw::DrawView *>(obj));
@@ -580,10 +595,6 @@ void QGIViewDimension::setNormalColorAll()
     aHead2->setFillColor(qc);
 }
 
-
-//special handling to prevent unwanted repositioning
-//clicking on the dimension, but outside the label, should do nothing to position
-//label will get clicks before QGIVDim
 void QGIViewDimension::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
 //    Base::Console().Message("QGIVDim::mouseReleaseEvent() - %s\n",getViewName());
@@ -633,27 +644,11 @@ void QGIViewDimension::updateDim()
         return;
     }
  
-    QString labelText;
-    QString unitText;
-    if ( (dim->Arbitrary.getValue() && !dim->EqualTolerance.getValue())
-        || (dim->Arbitrary.getValue() && dim->TheoreticalExact.getValue()) ) {
-        labelText = QString::fromUtf8(dim->getFormattedDimensionValue(1).c_str()); //just the number pref/spec/suf
-    } else {
-        if (dim->isMultiValueSchema()) {
-            labelText = QString::fromUtf8(dim->getFormattedDimensionValue(0).c_str()); //don't format multis
-        } else {
-            labelText = QString::fromUtf8(dim->getFormattedDimensionValue(1).c_str()); //just the number pref/spec/suf
-            if (dim->EqualTolerance.getValue()) {
-                if (dim->ArbitraryTolerances.getValue()) {
-                    unitText = QString();
-                } else {
-                    unitText = QString::fromUtf8(dim->getFormattedToleranceValue(2).c_str()); //just the unit
-                }
-            } else {
-                unitText = QString::fromUtf8(dim->getFormattedDimensionValue(2).c_str()); //just the unit
-            }
-        }
+    QString labelText= QString::fromUtf8(dim->getFormattedDimensionValue(1).c_str()); // pre value [unit] post
+    if (dim->isMultiValueSchema()) {
+        labelText = QString::fromUtf8(dim->getFormattedDimensionValue(0).c_str()); //don't format multis
     }
+
     QFont font = datumLabel->getFont();
     font.setFamily(QString::fromUtf8(vp->Font.getValue()));
     font.setPixelSize(calculateFontPixelSize(vp->Fontsize.getValue()));
@@ -662,7 +657,6 @@ void QGIViewDimension::updateDim()
     prepareGeometryChange();
     datumLabel->setDimString(labelText);
     datumLabel->setToleranceString();
-    datumLabel->setUnitString(unitText);
     datumLabel->setPosFromCenter(datumLabel->X(),datumLabel->Y());
 
     datumLabel->setFramed(dim->TheoreticalExact.getValue());

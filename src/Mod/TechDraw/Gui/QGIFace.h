@@ -23,18 +23,14 @@
 #ifndef DRAWINGGUI_QGRAPHICSITEMFACE_H
 #define DRAWINGGUI_QGRAPHICSITEMFACE_H
 
-#include <Qt>
-#include <QGraphicsItem>
-#include <QSvgRenderer>
 #include <QByteArray>
-#include <QBrush>
+#include <QGraphicsItem>
 #include <QPixmap>
-#include <QImage>
 
 #include <Mod/TechDraw/App/HatchLine.h>
-#include <Mod/TechDraw/App/Geometry.h>
 
 #include "QGIPrimPath.h"
+
 
 namespace TechDrawGui
 {
@@ -56,7 +52,7 @@ public:
     int type() const override { return Type;}
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 ) override;
+    virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = nullptr ) override;
 
 public:
     enum fillMode {

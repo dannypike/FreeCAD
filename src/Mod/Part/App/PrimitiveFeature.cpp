@@ -330,7 +330,7 @@ App::DocumentObjectExecReturn *Plane::execute(void)
 #endif
     );
 
-    const char *error=0;
+    const char *error=nullptr;
     switch (mkFace.Error())
     {
     case BRepBuilderAPI_FaceDone:
@@ -760,8 +760,8 @@ App::DocumentObjectExecReturn *Torus::execute(void)
 
 PROPERTY_SOURCE(Part::Helix, Part::Primitive)
 
-const char* Part::Helix::LocalCSEnums[]= {"Right-handed","Left-handed",NULL};
-const char* Part::Helix::StyleEnums  []= {"Old style","New style",NULL};
+const char* Part::Helix::LocalCSEnums[]= {"Right-handed","Left-handed",nullptr};
+const char* Part::Helix::StyleEnums  []= {"Old style","New style",nullptr};
 
 Helix::Helix(void)
 {
@@ -771,7 +771,7 @@ Helix::Helix(void)
     Height.setConstraints(&quantityRange);
     ADD_PROPERTY_TYPE(Radius,(1.0),"Helix",App::Prop_None,"The radius of the helix");
     Radius.setConstraints(&quantityRange);
-    ADD_PROPERTY_TYPE(SegmentLength,(1.0),"Helix",App::Prop_None,"The number of turns per helix subdivision");
+    ADD_PROPERTY_TYPE(SegmentLength,(0.0),"Helix",App::Prop_None,"The number of turns per helix subdivision");
     SegmentLength.setConstraints(&quantityRange);
     ADD_PROPERTY_TYPE(Angle,(0.0),"Helix",App::Prop_None,"If angle is != 0 a conical otherwise a cylindircal surface is used");
     Angle.setConstraints(&apexRange);

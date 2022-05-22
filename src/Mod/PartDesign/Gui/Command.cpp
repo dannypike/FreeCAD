@@ -36,6 +36,7 @@
 
 #include <App/Origin.h>
 #include <App/Part.h>
+#include <Base/Tools.h>
 #include <Gui/Application.h>
 #include <Gui/Command.h>
 #include <Gui/CommandT.h>
@@ -43,6 +44,7 @@
 #include <Gui/Document.h>
 #include <Gui/MainWindow.h>
 #include <Gui/Selection.h>
+#include <Gui/SelectionObject.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <Mod/PartDesign/App/Body.h>
 #include <Mod/PartDesign/App/FeatureGroove.h>
@@ -119,7 +121,8 @@ void UnifiedDatumCommand(Gui::Command &cmd, Base::Type type, std::string name)
             support.removeValue(pcActiveBody);
 
             auto Feat = pcActiveBody->getDocument()->getObject(FeatName.c_str());
-            if (!Feat) return;
+            if (!Feat)
+                return;
 
             //test if current selection fits a mode.
             if (support.getSize() > 0) {
@@ -296,7 +299,7 @@ void CmdPartDesignShapeBinder::activated(int iMsg)
         PartDesignGui::setEdit(support.getValue());
     } else {
         PartDesign::Body *pcActiveBody = PartDesignGui::getBody(/*messageIfNot = */true);
-        if (pcActiveBody == 0)
+        if (pcActiveBody == nullptr)
             return;
 
         std::string FeatName = getUniqueObjectName("ShapeBinder",pcActiveBody);
@@ -309,7 +312,8 @@ void CmdPartDesignShapeBinder::activated(int iMsg)
         support.removeValue(pcActiveBody);
 
         auto Feat = pcActiveBody->getObject(FeatName.c_str());
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         //test if current selection fits a mode.
         if (support.getSize() > 0) {
@@ -348,10 +352,10 @@ void CmdPartDesignSubShapeBinder::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
 
-    App::DocumentObject *parent = 0;
+    App::DocumentObject *parent = nullptr;
     std::string parentSub;
     std::map<App::DocumentObject *, std::vector<std::string> > values;
-    for (auto &sel : Gui::Selection().getCompleteSelection(0)) {
+    for (auto &sel : Gui::Selection().getCompleteSelection(Gui::ResolveMode::NoResolve)) {
         if (!sel.pObject) continue;
         auto &subs = values[sel.pObject];
         if (sel.SubName && sel.SubName[0])
@@ -381,7 +385,7 @@ void CmdPartDesignSubShapeBinder::activated(int iMsg)
         values = std::move(links);
     }
 
-    PartDesign::SubShapeBinder *binder = 0;
+    PartDesign::SubShapeBinder *binder = nullptr;
     try {
         openCommand(QT_TRANSLATE_NOOP("Command", "Create SubShapeBinder"));
         if (pcActiveBody) {
@@ -393,7 +397,8 @@ void CmdPartDesignSubShapeBinder::activated(int iMsg)
             binder = dynamic_cast<PartDesign::SubShapeBinder*>(
                     App::GetApplication().getActiveDocument()->getObject(FeatName.c_str()));
         }
-        if (!binder) return;
+        if (!binder)
+            return;
         binder->setLinks(std::move(values));
         updateActive();
         commitCommand();
@@ -1384,7 +1389,8 @@ void CmdPartDesignHole::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         finishProfileBased(cmd, sketch, Feat);
         cmd->adjustCameraPosition();
@@ -1430,7 +1436,8 @@ void CmdPartDesignRevolution::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd, &pcActiveBody](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         if (sketch->isDerivedFrom(Part::Part2DObject::getClassTypeId())) {
             FCMD_OBJ_CMD(Feat,"ReferenceAxis = (" << getObjectCmd(sketch) << ",['V_Axis'])");
@@ -1488,7 +1495,8 @@ void CmdPartDesignGroove::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd, &pcActiveBody](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         if (sketch->isDerivedFrom(Part::Part2DObject::getClassTypeId())) {
             FCMD_OBJ_CMD(Feat,"ReferenceAxis = ("<<getObjectCmd(sketch)<<",['V_Axis'])");
@@ -1554,7 +1562,8 @@ void CmdPartDesignAdditivePipe::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         // specific parameters for pipe
         Gui::Command::updateActive();
@@ -1604,7 +1613,8 @@ void CmdPartDesignSubtractivePipe::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         // specific parameters for pipe
         Gui::Command::updateActive();
@@ -1654,7 +1664,8 @@ void CmdPartDesignAdditiveLoft::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         // specific parameters for pipe
         Gui::Command::updateActive();
@@ -1704,7 +1715,8 @@ void CmdPartDesignSubtractiveLoft::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         // specific parameters for pipe
         Gui::Command::updateActive();
@@ -1753,7 +1765,14 @@ void CmdPartDesignAdditiveHelix::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd, &pcActiveBody](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
+
+        // Creating a helix with default values isn't always valid but fixes
+        // itself when more values are set. So, this guard is used to suppress
+        // errors before the user is able to change the parameters.
+        Base::ObjectStatusLocker<App::Document::Status, App::Document> guard(
+                                 App::Document::IgnoreErrorOnRecompute, Feat->getDocument(), true);
 
         // specific parameters for helix
         Gui::Command::updateActive();
@@ -1823,7 +1842,8 @@ void CmdPartDesignSubtractiveHelix::activated(int iMsg)
     Gui::Command* cmd = this;
     auto worker = [cmd, &pcActiveBody](Part::Feature* sketch, App::DocumentObject *Feat) {
 
-        if (!Feat) return;
+        if (!Feat)
+            return;
 
         // specific parameters for helix
         Gui::Command::updateActive();
@@ -1942,7 +1962,8 @@ void finishDressupFeature(const Gui::Command* cmd, const std::string& which,
     std::string FeatName = cmd->getUniqueObjectName(which.c_str(), base);
 
     auto body = PartDesignGui::getBodyFor(base, false);
-    if (!body) return;
+    if (!body)
+        return;
     cmd->openCommand((std::string("Make ") + which).c_str());
     FCMD_OBJ_CMD(body,"newObject('PartDesign::"<<which<<"','"<<FeatName<<"')");
     auto Feat = body->getDocument()->getObject(FeatName.c_str());
@@ -2524,19 +2545,20 @@ void CmdPartDesignMultiTransform::activated(int iMsg)
                 f++;
         }
 
-        if (features.empty()) return;
+        if (features.empty())
+            return;
         // Note: If multiple Transformed features were selected, only the first one is used
         PartDesign::Transformed* trFeat = static_cast<PartDesign::Transformed*>(features.front());
 
         // Move the insert point back one feature
-        App::DocumentObject* oldTip = 0;
-        App::DocumentObject* prevFeature = 0;
+        App::DocumentObject* oldTip = nullptr;
+        App::DocumentObject* prevFeature = nullptr;
         if (pcActiveBody){
             oldTip = pcActiveBody->Tip.getValue();
             prevFeature = pcActiveBody->getPrevSolidFeature(trFeat);
         }
         Gui::Selection().clearSelection();
-        if (prevFeature != NULL)
+        if (prevFeature != nullptr)
             Gui::Selection().addSelection(prevFeature->getDocument()->getName(), prevFeature->getNameInDocument());
 
         openCommand(QT_TRANSLATE_NOOP("Command", "Convert to MultiTransform feature"));
@@ -2586,7 +2608,7 @@ void CmdPartDesignMultiTransform::activated(int iMsg)
 
             // Make sure the user isn't presented with an empty screen because no transformations are defined yet...
             App::DocumentObject* prevSolid = pcActiveBody->Tip.getValue();
-            if (prevSolid != NULL) {
+            if (prevSolid != nullptr) {
                 Part::Feature* feat = static_cast<Part::Feature*>(prevSolid);
                 FCMD_OBJ_CMD(Feat,"Shape = "<<getObjectCmd(feat)<<".Shape");
             }
@@ -2626,7 +2648,8 @@ void CmdPartDesignBoolean::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     PartDesign::Body *pcActiveBody = PartDesignGui::getBody(/*messageIfNot = */true);
-    if (!pcActiveBody) return;
+    if (!pcActiveBody)
+        return;
 
     Gui::SelectionFilter BodyFilter("SELECT Part::Feature COUNT 1..");
 

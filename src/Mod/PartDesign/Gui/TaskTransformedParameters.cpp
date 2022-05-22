@@ -27,6 +27,7 @@
 #endif
 
 #include <App/Application.h>
+#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/Origin.h>
 #include <Base/Console.h>
@@ -53,7 +54,7 @@ using namespace Gui;
 
 TaskTransformedParameters::TaskTransformedParameters(ViewProviderTransformed *TransformedView, QWidget *parent)
     : TaskBox(Gui::BitmapFactory().pixmap((std::string("PartDesign_") + TransformedView->featureName).c_str()),
-              QString::fromLatin1((TransformedView->featureName + " parameters").c_str()), true, parent)
+              TransformedView->menuName, true, parent)
     , proxy(nullptr)
     , TransformedView(TransformedView)
     , parentTask(nullptr)
@@ -202,7 +203,8 @@ void TaskTransformedParameters::onButtonAddFeature(bool checked)
 void TaskTransformedParameters::checkVisibility() {
     auto feat = getObject();
     auto body = feat->getFeatureBody();
-    if(!body) return;
+    if(!body)
+        return;
     auto inset = feat->getInListEx(true);
     inset.emplace(feat);
     for(auto o : body->Group.getValues()) {
@@ -272,7 +274,7 @@ void TaskTransformedParameters::fillAxisCombo(ComboLinks &combolinks,
     }
 
     //add "Select reference"
-    combolinks.addLink(0,std::string(),tr("Select reference..."));
+    combolinks.addLink(nullptr,std::string(),tr("Select reference..."));
 }
 
 void TaskTransformedParameters::fillPlanesCombo(ComboLinks &combolinks,
@@ -308,7 +310,7 @@ void TaskTransformedParameters::fillPlanesCombo(ComboLinks &combolinks,
     }
 
     //add "Select reference"
-    combolinks.addLink(0,std::string(),tr("Select reference..."));
+    combolinks.addLink(nullptr,std::string(),tr("Select reference..."));
 }
 
 void TaskTransformedParameters::recomputeFeature() {
@@ -452,7 +454,7 @@ void TaskTransformedParameters::indexesMoved()
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 TaskDlgTransformedParameters::TaskDlgTransformedParameters(ViewProviderTransformed *TransformedView_)
-    : TaskDlgFeatureParameters(TransformedView_), parameter(0)
+    : TaskDlgFeatureParameters(TransformedView_), parameter(nullptr)
 {
     assert(vp);
     message = new TaskTransformedMessages(getTransformedView());
@@ -482,7 +484,7 @@ bool TaskDlgTransformedParameters::reject()
 
 
 ComboLinks::ComboLinks(QComboBox &combo)
-    : doc(0)
+    : doc(nullptr)
 {
     this->_combo = &combo;
     _combo->clear();
@@ -496,7 +498,7 @@ int ComboLinks::addLink(const App::PropertyLinkSub &lnk, QString itemText)
     this->linksInList.push_back(new App::PropertyLinkSub());
     App::PropertyLinkSub &newitem = *(linksInList[linksInList.size()-1]);
     newitem.Paste(lnk);
-    if (newitem.getValue() && this->doc == 0)
+    if (newitem.getValue() && this->doc == nullptr)
         this->doc = newitem.getValue()->getDocument();
     return linksInList.size()-1;
 }
@@ -509,7 +511,7 @@ int ComboLinks::addLink(App::DocumentObject *linkObj, std::string linkSubname, Q
     this->linksInList.push_back(new App::PropertyLinkSub());
     App::PropertyLinkSub &newitem = *(linksInList[linksInList.size()-1]);
     newitem.setValue(linkObj,std::vector<std::string>(1,linkSubname));
-    if (newitem.getValue() && this->doc == 0)
+    if (newitem.getValue() && this->doc == nullptr)
         this->doc = newitem.getValue()->getDocument();
     return linksInList.size()-1;
 }
@@ -525,7 +527,7 @@ void ComboLinks::clear()
 
 App::PropertyLinkSub &ComboLinks::getLink(int index) const
 {
-    if (index < 0 || index > (ssize_t) linksInList.size()-1)
+    if (index < 0 || index > static_cast<int>(linksInList.size())-1)
         throw Base::IndexError("ComboLinks::getLink:Index out of range");
     if (linksInList[index]->getValue() && doc && !(doc->isIn(linksInList[index]->getValue())))
         throw Base::ValueError("Linked object is not in the document; it may have been deleted");

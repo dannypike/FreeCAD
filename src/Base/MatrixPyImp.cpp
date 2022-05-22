@@ -23,10 +23,6 @@
 
 #include "PreCompiled.h"
 
-#include <climits>
-#include <cmath>
-#include "Base/Matrix.h"
-
 // inclusion of the generated files (generated out of MatrixPy.xml)
 #include "RotationPy.h"
 #include "VectorPy.h"
@@ -34,6 +30,7 @@
 #include "QuantityPy.h"
 #include "MatrixPy.h"
 #include "MatrixPy.cpp"
+
 
 using namespace Base;
 
@@ -71,7 +68,7 @@ int MatrixPy::PyInit(PyObject* args, PyObject* /*kwd*/)
                           &a21,&a22,&a23,&a24,
                           &a31,&a32,&a33,&a34,
                           &a41,&a42,&a43,&a44)) {
-        MatrixPy::PointerType ptr = reinterpret_cast<MatrixPy::PointerType>(_pcTwinPointer);
+        MatrixPy::PointerType ptr = getMatrixPtr();
         (*ptr) = Matrix4D(a11,a12,a13,a14,
                           a21,a22,a23,a24,
                           a31,a32,a33,a34,
@@ -82,7 +79,7 @@ int MatrixPy::PyInit(PyObject* args, PyObject* /*kwd*/)
     PyErr_Clear();
     PyObject *o;
     if (PyArg_ParseTuple(args, "O!", &(Base::MatrixPy::Type), &o)) {
-        MatrixPy::PointerType ptr = reinterpret_cast<MatrixPy::PointerType>(_pcTwinPointer);
+        MatrixPy::PointerType ptr = getMatrixPtr();
         (*ptr) = static_cast<MatrixPy*>(o)->value();
         return 0;
     }
@@ -123,7 +120,7 @@ int MatrixPy::PyInit(PyObject* args, PyObject* /*kwd*/)
         return 0;
     }
 
-    PyErr_SetString(Base::BaseExceptionFreeCADError, "matrix or up to 16 floats expected");
+    PyErr_SetString(PyExc_TypeError, "matrix or up to 16 floats expected");
     return -1;
 }
 
@@ -613,7 +610,7 @@ PyObject* MatrixPy::multiply(PyObject * args)
         return new VectorPy(new Vector3d(vec));
     }
 
-    PyErr_SetString(Base::BaseExceptionFreeCADError, "either vector or matrix expected");
+    PyErr_SetString(PyExc_TypeError, "either vector or matrix expected");
     return nullptr;
 }
 
@@ -636,7 +633,7 @@ PyObject* MatrixPy::invert(PyObject * args)
         if (fabs(getMatrixPtr()->determinant()) > DBL_EPSILON)
             getMatrixPtr()->inverseGauss();
         else {
-            PyErr_SetString(Base::BaseExceptionFreeCADError, "Cannot invert singular matrix");
+            PyErr_SetString(Base::PyExc_FC_GeneralError, "Cannot invert singular matrix");
             return nullptr;
         }
     }
@@ -657,7 +654,7 @@ PyObject* MatrixPy::inverse(PyObject * args)
             return new MatrixPy(m);
         }
         else {
-            PyErr_SetString(Base::BaseExceptionFreeCADError, "Cannot invert singular matrix");
+            PyErr_SetString(Base::PyExc_FC_GeneralError, "Cannot invert singular matrix");
             return nullptr;
         }
     }

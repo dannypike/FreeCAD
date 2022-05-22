@@ -24,16 +24,13 @@
 #ifndef PROPERTYEDITOR_H
 #define PROPERTYEDITOR_H
 
-#include <map>
-#include <string>
-#include <vector>
 #include <unordered_set>
 
 #include <QTreeView>
 
-#include <App/DocumentObserver.h>
 #include "PropertyItem.h"
 #include "PropertyModel.h"
+
 
 namespace App {
 class Property;
@@ -69,7 +66,7 @@ class PropertyEditor : public QTreeView
     Q_PROPERTY(QColor groupTextColor READ groupTextColor WRITE setGroupTextColor DESIGNABLE true SCRIPTABLE true)
 
 public:
-    PropertyEditor(QWidget *parent = 0);
+    PropertyEditor(QWidget *parent = nullptr);
     ~PropertyEditor();
 
     /** Builds up the list view with the properties. */

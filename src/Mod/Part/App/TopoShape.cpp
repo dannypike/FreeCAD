@@ -194,9 +194,11 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <Base/BoundBox.h>
 #include <Base/Builder3D.h>
 #include <Base/FileInfo.h>
 #include <Base/Exception.h>
+#include <Base/Placement.h>
 #include <Base/Tools.h>
 #include <Base/Console.h>
 #include <App/Material.h>
@@ -393,7 +395,8 @@ TopoDS_Shape TopoShape::getSubShape(TopAbs_ShapeEnum type, int index, bool silen
 
 unsigned long TopoShape::countSubShapes(const char* Type) const
 {
-    if(!Type) return 0;
+    if(!Type)
+        return 0;
     if(strcmp(Type,"SubShape")==0)
         return countSubShapes(TopAbs_SHAPE);
     auto type = shapeType(Type,true);
@@ -987,6 +990,10 @@ void TopoShape::exportIges(const char *filename) const
 void TopoShape::exportStep(const char *filename) const
 {
     try {
+        // Fixes issue #6282
+        // Do not write out any assembly information when using the simplified STEP export
+        Interface_Static::SetIVal("write.step.assembly", 0);
+
         // write step file
         STEPControl_Writer aWriter;
 
@@ -2960,6 +2967,11 @@ TopoDS_Shape TopoShape::makeOffset2D(double offset, short joinType, bool fill, b
             }
             offsetShape = mkOffset.Shape();
 
+            // Replace OffsetCurve with B-Spline
+            if (!offsetShape.IsNull()) {
+                offsetShape = mkOffset.Replace(GeomAbs_OffsetCurve, offsetShape);
+            }
+
             if (offsetShape.IsNull())
                 throw Base::CADKernelError("makeOffset2D: result of offsetting is null!");
 
@@ -3128,7 +3140,9 @@ TopoDS_Shape TopoShape::makeOffset2D(double offset, short joinType, bool fill, b
         BRep_Builder builder;
         builder.MakeCompound(result);
         for(TopoDS_Shape &sh : shapesToReturn) {
-            builder.Add(result, sh);
+            if (!sh.IsNull()) {
+                builder.Add(result, sh);
+            }
         }
         return TopoDS_Shape(std::move(result));
     }
@@ -3159,13 +3173,18 @@ TopoDS_Shape TopoShape::makeThickSolid(const TopTools_ListOfShape& remFace,
 
 void TopoShape::transformGeometry(const Base::Matrix4D &rclMat)
 {
-    if (this->_Shape.IsNull())
-        Standard_Failure::Raise("Cannot transform null shape");
+    try {
+        if (this->_Shape.IsNull())
+            Standard_Failure::Raise("Cannot transform null shape");
 
-    *this = makeGTransform(rclMat);
+        *this = makeGTransform(rclMat);
+    }
+    catch (const Standard_Failure& e) {
+        throw Base::CADKernelError(e.GetMessageString());
+    }
 }
 
-TopoDS_Shape TopoShape::transformGShape(const Base::Matrix4D& rclTrf) const
+TopoDS_Shape TopoShape::transformGShape(const Base::Matrix4D& rclTrf, bool copy) const
 {
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Cannot transform null shape");
@@ -3185,7 +3204,7 @@ TopoDS_Shape TopoShape::transformGShape(const Base::Matrix4D& rclTrf) const
     mat.SetValue(3,4,rclTrf[2][3]);
 
     // geometric transformation
-    BRepBuilderAPI_GTransform mkTrf(this->_Shape, mat);
+    BRepBuilderAPI_GTransform mkTrf(this->_Shape, mat, copy);
     return mkTrf.Shape();
 }
 
@@ -3194,7 +3213,7 @@ bool TopoShape::transformShape(const Base::Matrix4D& rclTrf, bool copy, bool che
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Cannot transform null shape");
 
-    return _makeTransform(TopoShape(*this),rclTrf,0,checkScale,copy);
+    return _makeTransform(TopoShape(*this),rclTrf,nullptr,checkScale,copy);
 }
 
 TopoDS_Shape TopoShape::mirror(const gp_Ax2& ax2) const
@@ -3784,6 +3803,8 @@ void TopoShape::getPoints(std::vector<Base::Vector3d> &Points,
                     Points.push_back(Base::convertTo<Base::Vector3d>(p));
                     gp_Dir normal;
                     if (GeomLib::NormEstim(aSurf, p2d, Precision::Confusion(), normal) <= 1) {
+                        if (face.Orientation() == TopAbs_REVERSED)
+                            normal.Reverse();
                         Normals.push_back(Base::convertTo<Base::Vector3d>(normal));
                     }
                     else {
@@ -4124,7 +4145,7 @@ TopoShape &TopoShape::makeWires(const TopoShape &shape, const char *op, bool fix
         // Now retrieve the shape and set it without touching element map
         wires.back().setShape(aFix.Wire());
     }
-    return makeCompound(wires,0,false);
+    return makeCompound(wires,nullptr,false);
 }
 
 TopoShape &TopoShape::makeCompound(const std::vector<TopoShape> &shapes, const char *op, bool force)
@@ -4299,10 +4320,15 @@ bool TopoShape::_makeTransform(const TopoShape &shape,
         const Base::Matrix4D &rclTrf, const char *op, bool checkScale, bool copy)
 {
     if(checkScale) {
-        auto type = rclTrf.hasScale();
-        if (type != Base::ScaleType::Uniform && type != Base::ScaleType::NoScaling) {
-            makeGTransform(shape,rclTrf,op,copy);
-            return true;
+        try {
+            auto type = rclTrf.hasScale();
+            if (type != Base::ScaleType::Uniform && type != Base::ScaleType::NoScaling) {
+                makeGTransform(shape,rclTrf,op,copy);
+                return true;
+            }
+        }
+        catch (const Standard_Failure& e) {
+            Base::Console().Warning("TopoShape::makeGTransform failed: %s\n", e.GetMessageString());
         }
     }
     makeTransform(shape,convert(rclTrf),op,copy);
@@ -4338,27 +4364,9 @@ TopoShape &TopoShape::makeTransform(const TopoShape &shape, const gp_Trsf &trsf,
     return *this;
 }
 
-TopoShape &TopoShape::makeGTransform(const TopoShape &shape,
-        const Base::Matrix4D &rclTrf, const char *op, bool copy)
+TopoShape &TopoShape::makeGTransform(const TopoShape &shape, const Base::Matrix4D &rclTrf, const char *op, bool copy)
 {
-    (void)op;
-    gp_GTrsf mat;
-    mat.SetValue(1,1,rclTrf[0][0]);
-    mat.SetValue(2,1,rclTrf[1][0]);
-    mat.SetValue(3,1,rclTrf[2][0]);
-    mat.SetValue(1,2,rclTrf[0][1]);
-    mat.SetValue(2,2,rclTrf[1][1]);
-    mat.SetValue(3,2,rclTrf[2][1]);
-    mat.SetValue(1,3,rclTrf[0][2]);
-    mat.SetValue(2,3,rclTrf[1][2]);
-    mat.SetValue(3,3,rclTrf[2][2]);
-    mat.SetValue(1,4,rclTrf[0][3]);
-    mat.SetValue(2,4,rclTrf[1][3]);
-    mat.SetValue(3,4,rclTrf[2][3]);
-
-    // geometric transformation
-    BRepBuilderAPI_GTransform mkTrf(shape.getShape(), mat, copy);
-    _Shape = mkTrf.Shape();
+    std::ignore = op;
+    _Shape = shape.transformGShape(rclTrf, copy);
     return *this;
 }
-

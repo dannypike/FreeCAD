@@ -32,6 +32,8 @@
 #include <Base/Quantity.h>
 #include <Base/UnitsApi.h>
 
+#include <App/Document.h>
+
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
@@ -52,7 +54,6 @@
 
 #include <Mod/TechDraw/Gui/ui_TaskDetail.h>
 
-#include "DrawGuiStd.h"
 #include "QGVPage.h"
 #include "QGIView.h"
 #include "QGIPrimPath.h"
@@ -619,7 +620,8 @@ bool TaskDetail::accept()
 //    Base::Console().Message("TD::accept()\n");
 
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     m_ghost->hide();
     getDetailFeat()->requestPaint();
@@ -633,7 +635,8 @@ bool TaskDetail::reject()
 {
 //    Base::Console().Message("TD::reject()\n");
     Gui::Document* doc = Gui::Application::Instance->getDocument(m_basePage->getDocument());
-    if (!doc) return false;
+    if (!doc)
+        return false;
 
     m_ghost->hide();
     if (m_mode == CREATEMODE) {
@@ -659,7 +662,7 @@ TaskDlgDetail::TaskDlgDetail(TechDraw::DrawViewPart* baseFeat)
 {
     widget  = new TaskDetail(baseFeat);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/TechDraw_DetailView"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }
@@ -669,7 +672,7 @@ TaskDlgDetail::TaskDlgDetail(TechDraw::DrawViewDetail* detailFeat)
 {
     widget  = new TaskDetail(detailFeat);
     taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("actions/TechDraw_DetailView"),
-                                             widget->windowTitle(), true, 0);
+                                             widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
 }

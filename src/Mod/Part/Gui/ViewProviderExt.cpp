@@ -75,6 +75,7 @@
 #include <Base/TimeInfo.h>
 #include <Base/Tools.h>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/regex.hpp>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Control.h>
 #include <Gui/Selection.h>
@@ -103,8 +104,8 @@ PROPERTY_SOURCE(PartGui::ViewProviderPartExt, Gui::ViewProviderGeometryObject)
 App::PropertyFloatConstraint::Constraints ViewProviderPartExt::sizeRange = {1.0,64.0,1.0};
 App::PropertyFloatConstraint::Constraints ViewProviderPartExt::tessRange = {0.01,100.0,0.01};
 App::PropertyQuantityConstraint::Constraints ViewProviderPartExt::angDeflectionRange = {1.0,180.0,0.05};
-const char* ViewProviderPartExt::LightingEnums[]= {"One side","Two side",NULL};
-const char* ViewProviderPartExt::DrawStyleEnums[]= {"Solid","Dashed","Dotted","Dashdot",NULL};
+const char* ViewProviderPartExt::LightingEnums[]= {"One side","Two side",nullptr};
+const char* ViewProviderPartExt::DrawStyleEnums[]= {"Solid","Dashed","Dotted","Dashdot",nullptr};
 
 ViewProviderPartExt::ViewProviderPartExt() 
 {
@@ -334,7 +335,7 @@ void ViewProviderPartExt::onChanged(const App::Property* prop)
             DiffuseColor.setValues(colors);
 
             App::PropertyContainer* parent = ShapeMaterial.getContainer();
-            ShapeMaterial.setContainer(0);
+            ShapeMaterial.setContainer(nullptr);
             ShapeMaterial.setTransparency(trans);
             ShapeMaterial.setContainer(parent);
         }
@@ -507,28 +508,28 @@ std::string ViewProviderPartExt::getElement(const SoDetail* detail) const
 
 SoDetail* ViewProviderPartExt::getDetail(const char* subelement) const
 {
-    std::string element = subelement;
-    std::string::size_type pos = element.find_first_of("0123456789");
-    int index = -1;
-    if (pos != std::string::npos) {
-        index = std::atoi(element.substr(pos).c_str());
-        element = element.substr(0,pos);
-    }
+    std::string element;
+    int index;
+    SoDetail* detail = nullptr;
+    boost::regex ex("^(Face|Edge|Vertex)([1-9][0-9]*)$");
+    boost::cmatch what;
 
-    SoDetail* detail = 0;
-    if (index < 0)
-        return detail;
-    if (element == "Face") {
-        detail = new SoFaceDetail();
-        static_cast<SoFaceDetail*>(detail)->setPartIndex(index - 1);
-    }
-    else if (element == "Edge") {
-        detail = new SoLineDetail();
-        static_cast<SoLineDetail*>(detail)->setLineIndex(index - 1);
-    }
-    else if (element == "Vertex") {
-        detail = new SoPointDetail();
-        static_cast<SoPointDetail*>(detail)->setCoordinateIndex(index + nodeset->startIndex.getValue() - 1);
+    if (boost::regex_match(subelement, what, ex)) {
+        element = what[1].str();
+        index = std::atoi(what[2].str().c_str());
+
+        if (element == "Face") {
+            detail = new SoFaceDetail();
+            static_cast<SoFaceDetail*>(detail)->setPartIndex(index - 1);
+        }
+        else if (element == "Edge") {
+            detail = new SoLineDetail();
+            static_cast<SoLineDetail*>(detail)->setLineIndex(index - 1);
+        }
+        else if (element == "Vertex") {
+            detail = new SoPointDetail();
+            static_cast<SoPointDetail*>(detail)->setCoordinateIndex(index + nodeset->startIndex.getValue() - 1);
+        }
     }
 
     return detail;

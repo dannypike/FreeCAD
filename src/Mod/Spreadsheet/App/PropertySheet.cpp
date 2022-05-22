@@ -86,7 +86,7 @@ Cell *PropertySheet::getValue(CellAddress key)
     std::map<CellAddress, Cell*>::const_iterator i = data.find(key);
 
     if (i == data.end())
-        return 0;
+        return nullptr;
     else
         return i->second;
 }
@@ -96,7 +96,7 @@ const Cell *PropertySheet::getValue(CellAddress key) const
     std::map<CellAddress, Cell*>::const_iterator i = data.find(key);
 
     if (i == data.end())
-        return 0;
+        return nullptr;
     else
         return i->second;
 }
@@ -108,7 +108,7 @@ Cell * PropertySheet::getValueFromAlias(const std::string &alias)
     if (it != revAliasProp.end())
         return getValue(it->second);
     else
-        return 0;
+        return nullptr;
 }
 
 const Cell * PropertySheet::getValueFromAlias(const std::string &alias) const
@@ -118,7 +118,7 @@ const Cell * PropertySheet::getValueFromAlias(const std::string &alias) const
     if (it != revAliasProp.end())
         return getValue(it->second);
     else
-        return 0;
+        return nullptr;
 }
 
 bool PropertySheet::isValidAlias(const std::string &candidate)
@@ -127,7 +127,7 @@ bool PropertySheet::isValidAlias(const std::string &candidate)
     boost::cmatch cm;
 
     /* Check if it is used before */
-    if (getValueFromAlias(candidate) != 0)
+    if (getValueFromAlias(candidate) != nullptr)
         return false;
 
     /* Check to make sure it doesn't clash with a predefined unit */
@@ -152,13 +152,27 @@ bool PropertySheet::isValidAlias(const std::string &candidate)
         return false;
 }
 
-std::set<CellAddress> PropertySheet::getUsedCells() const
+std::vector<CellAddress> PropertySheet::getUsedCells() const
 {
-    std::set<CellAddress> usedSet;
+    std::vector<CellAddress> usedSet;
 
     for (std::map<CellAddress, Cell*>::const_iterator i = data.begin(); i != data.end(); ++i) {
         if (i->second->isUsed())
-            usedSet.insert(i->first);
+            usedSet.push_back(i->first);
+    }
+
+    return usedSet;
+}
+
+std::vector<CellAddress> PropertySheet::getNonEmptyCells() const
+{
+    std::vector<CellAddress> usedSet;
+
+    std::string str;
+    for (std::map<CellAddress, Cell*>::const_iterator i = data.begin(); i != data.end(); ++i) {
+        str.clear();
+        if (i->second->isUsed() && i->second->getStringContent(str) && !str.empty())
+            usedSet.push_back(i->first);
     }
 
     return usedSet;
@@ -178,7 +192,7 @@ void PropertySheet::setDirty(CellAddress address)
 void PropertySheet::setDirty()
 {
     AtomicPropertyChange signaller(*this);
-    for(auto &address : getUsedCells()) {
+    for(auto &address : getNonEmptyCells()) {
         auto cell = cellAt(address);
         std::string content;
         if(cell && cell->getStringContent(content,false)) {
@@ -356,19 +370,20 @@ void PropertySheet::copyCells(Base::Writer& writer, const std::vector<Range>& ra
     writer.Stream() << "<Cells count=\"" << ranges.size() << "\">" << std::endl;
     writer.incInd();
     for (auto range : ranges) {
+        auto r = range;
+        int count = 0;
+        do {
+            auto cell = getValue(*r);
+            if(cell && cell->isUsed())
+                ++count;
+        }while(r.next());
         writer.Stream() << writer.ind() << "<Range from=\"" << range.fromCellString()
-            << "\" to=\"" << range.toCellString() << "\" count=\"" << range.size() << "\">" << std::endl;
+            << "\" to=\"" << range.toCellString() << "\" count=\"" << count << "\">" << std::endl;
         writer.incInd();
         do {
             auto cell = getValue(*range);
             if (cell && cell->isUsed()) {
                 cell->save(writer);
-            }
-            else {
-                // The cell is empty, so when it's pasted it needs to clear the existing contents
-                writer.Stream() << writer.ind() << "<Cell "
-                    << "address=\"" << (*range).toString() << "\" "
-                    << "content = \"\" />";
             }
         } while (range.next());
         writer.decInd();
@@ -388,7 +403,7 @@ void PropertySheet::pasteCells(XMLReader &reader, Range dstRange) {
     int dstCols = dstRange.colCount();
     CellAddress dstFrom = dstRange.from();
 
-    int roffset,coffset;
+    int roffset=0,coffset=0;
 
     AtomicPropertyChange signaller(*this);
     for(int ri=0; ri < rangeCount; ++ri) {
@@ -432,7 +447,6 @@ void PropertySheet::pasteCells(XMLReader &reader, Range dstRange) {
                         if(!dst.isValid())
                             continue;
                         owner->clear(dst);
-                        owner->cellUpdated(dst);
                     }
                 }
                 range.next();
@@ -479,7 +493,6 @@ void PropertySheet::pasteCells(XMLReader &reader, Range dstRange) {
                             recomputeDependencies(dst);
                     }
                     dirty.insert(dst);
-                    owner->cellUpdated(dst);
                 }
             }
         }
@@ -492,11 +505,11 @@ void PropertySheet::pasteCells(XMLReader &reader, Range dstRange) {
                         if(!dst.isValid())
                             continue;
                         owner->clear(dst);
-                        owner->cellUpdated(dst);
                     }
                 }
             }while(range.next());
         }
+        owner->rangeUpdated(Range(from, to));
     }
     signaller.tryInvoke();
 }
@@ -517,7 +530,7 @@ Cell * PropertySheet::cellAt(CellAddress address)
     std::map<CellAddress, Cell*>::const_iterator i = data.find(address);
 
     if (i == data.end())
-        return 0;
+        return nullptr;
     else
         return i->second;
 }
@@ -537,7 +550,7 @@ const Cell * PropertySheet::cellAt(CellAddress address) const
     std::map<CellAddress, Cell*>::const_iterator i = data.find(address);
 
     if (i == data.end())
-        return 0;
+        return nullptr;
     else
         return i->second;
 }
@@ -566,43 +579,44 @@ Cell * PropertySheet::nonNullCellAt(CellAddress address)
 void PropertySheet::setContent(CellAddress address, const char *value)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setContent(value);
 }
 
 void PropertySheet::setAlignment(CellAddress address, int _alignment)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
-    if (cell->address != address) return; //Reject alignment change for merged cell except top-left one
+    assert(cell != nullptr);
+    if (cell->address != address) //Reject alignment change for merged cell except top-left one
+        return;
     cell->setAlignment(_alignment);
 }
 
 void PropertySheet::setStyle(CellAddress address, const std::set<std::string> &_style)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setStyle(_style);
 }
 
 void PropertySheet::setForeground(CellAddress address, const App::Color &color)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setForeground(color);
 }
 
 void PropertySheet::setBackground(CellAddress address, const App::Color &color)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setBackground(color);
 }
 
 void PropertySheet::setDisplayUnit(CellAddress address, const std::string &unit)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setDisplayUnit(unit);
 }
 
@@ -614,7 +628,7 @@ void PropertySheet::setAlias(CellAddress address, const std::string &alias)
 
     const Cell * aliasedCell = getValueFromAlias(alias);
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
 
     if(aliasedCell == cell)
         return;
@@ -658,14 +672,14 @@ void PropertySheet::setAlias(CellAddress address, const std::string &alias)
 void PropertySheet::setComputedUnit(CellAddress address, const Base::Unit &unit)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setComputedUnit(unit);
 }
 
 void PropertySheet::setSpans(CellAddress address, int rows, int columns)
 {
     Cell * cell = nonNullCellAt(address);
-    assert(cell != 0);
+    assert(cell != nullptr);
     cell->setSpans(rows, columns);
 }
 
@@ -1015,8 +1029,10 @@ bool PropertySheet::mergeCells(CellAddress from, CellAddress to)
     // Check that this merge is not overlapping other merged cells
     for (int r = from.row(); r <= to.row(); ++r) {
         for (int c = from.col(); c <= to.col(); ++c) {
-            if (mergedCells.find(CellAddress(r, c)) != mergedCells.end())
-                return false;
+            if (mergedCells.find(CellAddress(r, c)) != mergedCells.end()) {
+                    Base::Console().Warning("Cells merging is not possible when already merged cells are in the target range.\n");
+                    return false;
+            }
         }
     }
 
@@ -1118,7 +1134,7 @@ void PropertySheet::addDependencies(CellAddress key)
 
     const Expression * expression = cell->getExpression();
 
-    if (expression == 0)
+    if (expression == nullptr)
         return;
 
     for(auto &var : expression->getIdentifiers()) {
@@ -1291,7 +1307,14 @@ void PropertySheet::invalidateDependants(const App::DocumentObject *docObj)
     }
 }
 
-void PropertySheet::slotChangedObject(const App::DocumentObject &obj, const App::Property &prop) {
+void PropertySheet::slotChangedObject(const App::DocumentObject &obj, const App::Property &prop)
+{
+    if (&obj == getContainer()) {
+        if (&prop == this || !prop.getName() || revAliasProp.count(prop.getName()))
+            return;
+        if (stringToAddress(prop.getName(), true).isValid())
+            return;
+    }
     recomputeDependants(&obj, prop.getName());
 }
 
@@ -1589,7 +1612,7 @@ Property *PropertySheet::CopyOnImportExternal(
         changed[d.first] = std::move(expr);
     }
     if(changed.empty())
-        return 0;
+        return nullptr;
     std::unique_ptr<PropertySheet> copy(new PropertySheet(*this));
     for(auto &change : changed) 
         copy->data[change.first]->setExpression(std::move(change.second));
@@ -1609,7 +1632,7 @@ Property *PropertySheet::CopyOnLabelChange(App::DocumentObject *obj,
         changed[d.first] = std::move(expr);
     }
     if(changed.empty())
-        return 0;
+        return nullptr;
     std::unique_ptr<PropertySheet> copy(new PropertySheet(*this));
     for(auto &change : changed) 
         copy->data[change.first]->setExpression(std::move(change.second));
@@ -1629,7 +1652,7 @@ Property *PropertySheet::CopyOnLinkReplace(const App::DocumentObject *parent,
         changed[d.first] = std::move(expr);
     }
     if(changed.empty())
-        return 0;
+        return nullptr;
     std::unique_ptr<PropertySheet> copy(new PropertySheet(*this));
     for(auto &change : changed) 
         copy->data[change.first]->setExpression(std::move(change.second));

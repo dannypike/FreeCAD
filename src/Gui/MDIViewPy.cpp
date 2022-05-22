@@ -20,27 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #include "PreCompiled.h"
 
-#include "MDIViewPy.h"
-#include "Application.h"
-#include "Document.h"
-
-#include <Base/Console.h>
-#include <Base/Exception.h>
-#include <Base/Interpreter.h>
-#include <Base/PlacementPy.h>
-#include <Base/Rotation.h>
-#include <Base/RotationPy.h>
-#include <Base/VectorPy.h>
-#include <Base/GeometryPyCXX.h>
-
-#include <App/Document.h>
 #include <App/DocumentObject.h>
 #include <App/DocumentObjectPy.h>
-#include <App/GeoFeature.h>
-#include <CXX/Objects.hxx>
+#include <Base/Exception.h>
+
+#include "MDIViewPy.h"
+#include "MDIView.h"
+
 
 using namespace Gui;
 
@@ -176,7 +164,7 @@ Py::Object MDIViewPy::redoActions(const Py::Tuple& args)
 
 Py::Object MDIViewPy::sendMessage(const Py::Tuple& args)
 {
-    const char **ppReturn = 0;
+    const char **ppReturn = nullptr;
     char *psMsgStr;
     if (!PyArg_ParseTuple(args.ptr(), "s;Message string needed (string)",&psMsgStr))
         throw Py::Exception();
@@ -246,13 +234,13 @@ Py::Object MDIViewPy::setActiveObject(const Py::Tuple& args)
 {
     PyObject* docObject = Py_None;
     char* name;
-    char *subname = 0;
+    char *subname = nullptr;
     if (!PyArg_ParseTuple(args.ptr(), "s|Os", &name, &docObject, &subname))
         throw Py::Exception();
 
     if (_view) {
         if (docObject == Py_None) {
-            _view->setActiveObject(0, name);
+            _view->setActiveObject(nullptr, name);
         }
         else {
             if (!PyObject_TypeCheck(docObject, &App::DocumentObjectPy::Type))

@@ -24,32 +24,29 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
+# include <boost/algorithm/string/predicate.hpp>
 # include <QApplication>
-# include <QPainter>
-# include <QMenu>
-# include <QDebug>
-# include <QDialog>
-# include <QMessageBox>
-# include <QCheckBox>
 # include <QInputDialog>
+# include <QMenu>
+# include <QPainter>
 #endif
 
-#include <boost/algorithm/string/predicate.hpp>
-
+#include <App/Application.h>
+#include <App/AutoTransaction.h>
+#include <App/Document.h>
 #include <Base/Console.h>
 #include <Base/Tools.h>
-#include <App/Application.h>
-#include <App/Document.h>
-#include <App/AutoTransaction.h>
-#include "ViewProviderDocumentObject.h"
-#include "MainWindow.h"
-#include "DlgAddProperty.h"
+
 #include "PropertyEditor.h"
+#include "DlgAddProperty.h"
+#include "MainWindow.h"
 #include "PropertyItemDelegate.h"
 #include "PropertyModel.h"
 #include "PropertyView.h"
+#include "ViewProviderDocumentObject.h"
 
-FC_LOG_LEVEL_INIT("PropertyView",true,true)
+
+FC_LOG_LEVEL_INIT("PropertyView", true, true)
 
 using namespace Gui::PropertyEditor;
 
@@ -282,7 +279,7 @@ void PropertyEditor::openEditor(const QModelIndex &index)
     str << tr("Edit").toUtf8().constData() << ' ';
     for(auto prop : items) {
         if(prop->getContainer()!=obj) {
-            obj = 0;
+            obj = nullptr;
             break;
         }
     }
@@ -779,7 +776,7 @@ void PropertyEditor::contextMenuEvent(QContextMenuEvent *) {
         if(res.size()) {
             std::string group = res.toUtf8().constData();
             for(auto prop : props)
-                prop->getContainer()->changeDynamicProperty(prop,group.c_str(),0);
+                prop->getContainer()->changeDynamicProperty(prop,group.c_str(),nullptr);
             buildUp(PropertyModel::PropertyList(propList),checkDocument);
         }
         return;

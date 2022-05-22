@@ -28,6 +28,7 @@
 #include <Base/Reader.h>
 #include <Base/Tools.h>
 #include <Base/Writer.h>
+#include <CXX/Objects.hxx>
 
 #include "PropertyExpressionEngine.h"
 #include "ExpressionVisitors.h"
@@ -672,7 +673,20 @@ DocumentObjectExecReturn *App::PropertyExpressionEngine::execute(ExecuteOption o
             std::shared_ptr<App::Expression> expression = expressions[*it].expression;
             if (expression) {
                 value = expression->getValueAsAny();
-                if (option == ExecuteOnRestore && prop->testStatus(Property::EvalOnRestore)) {
+
+                // Enable value comparison for all expression bindings to reduce
+                // unnecessary touch and recompute.
+                //
+                // This optimization is necessary for some hidden reference to
+                // work because it introduce dependency loop. The repeativtive
+                // recompute can be stopped if the expression evaluates the same
+                // value.
+                //
+                // In the future, we can generalize the optimization to all
+                // property modification, i.e. do not touch unless value change
+                //
+                // if (option == ExecuteOnRestore && prop->testStatus(Property::EvalOnRestore))
+                {
                     if (isAnyEqual(value, prop->getPathValue(*it)))
                         continue;
                     if (touched)
@@ -710,7 +724,7 @@ void PropertyExpressionEngine::getPathsToDocumentObject(DocumentObject* obj,
 {
     DocumentObject * owner = freecad_dynamic_cast<DocumentObject>(getContainer());
 
-    if (owner == 0 || owner==obj)
+    if (owner == nullptr || owner==obj)
         return;
 
     for(auto &v : expressions) {
@@ -964,7 +978,7 @@ Property *PropertyExpressionEngine::CopyOnImportExternal(
         engine->expressions[it->first] = ExpressionInfo(expr);
     }
     if(!engine)
-        return 0;
+        return nullptr;
     engine->validator = validator;
     return engine.release();
 }
@@ -994,7 +1008,7 @@ Property *PropertyExpressionEngine::CopyOnLabelChange(App::DocumentObject *obj,
         engine->expressions[it->first] = ExpressionInfo(expr);
     }
     if(!engine)
-        return 0;
+        return nullptr;
     engine->validator = validator;
     return engine.release();
 }
@@ -1026,7 +1040,7 @@ Property *PropertyExpressionEngine::CopyOnLinkReplace(const App::DocumentObject 
         engine->expressions[it->first] = ExpressionInfo(expr);
     }
     if(!engine)
-        return 0;
+        return nullptr;
     engine->validator = validator;
     return engine.release();
 }

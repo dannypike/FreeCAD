@@ -26,14 +26,14 @@
 # include <sstream>
 #endif
 
+#include <App/Document.h>
 #include <Base/Matrix.h>
 #include <Base/MatrixPy.h>
-
-#include <App/Document.h>
+#include <Base/Stream.h>
 
 #include "Application.h"
-#include "Document.h"
 #include "MergeDocuments.h"
+#include "MDIView.h"
 #include "ViewProviderExtern.h"
 
 // inclusion of the generated files (generated out of DocumentPy.xml)
@@ -115,7 +115,7 @@ PyObject* DocumentPy::setEdit(PyObject *args)
     if (PyArg_ParseTuple(args, "s|is", &psFeatStr,&mod,&subname)) {
         obj = getDocumentPtr()->getDocument()->getObject(psFeatStr);
         if (!obj) {
-            PyErr_Format(Base::BaseExceptionFreeCADError, "No such object found in document: '%s'", psFeatStr);
+            PyErr_Format(Base::PyExc_FC_GeneralError, "No such object found in document: '%s'", psFeatStr);
             return nullptr;
         }
     }
@@ -262,7 +262,7 @@ PyObject* DocumentPy::mdiViewsOfType(PyObject *args)
 
     Base::Type type = Base::Type::fromName(sType);
     if (type.isBad()) {
-        PyErr_Format(Base::BaseExceptionFreeCADError, "'%s' is not a valid type", sType);
+        PyErr_Format(PyExc_TypeError, "'%s' is not a valid type", sType);
         return nullptr;
     }
 
@@ -465,7 +465,7 @@ void DocumentPy::setInEditInfo(Py::Object arg)
 Py::Int DocumentPy::getEditMode(void) const
 {
     int mode = -1;
-    getDocumentPtr()->getInEdit(0,0,&mode);
+    getDocumentPtr()->getInEdit(nullptr,nullptr,&mode);
 
     return Py::Int(mode);
 }

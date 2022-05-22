@@ -20,14 +20,12 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef GUI_TASKVIEW_TaskLoftParameters_H
 #define GUI_TASKVIEW_TaskLoftParameters_H
 
-#include <Gui/Selection.h>
-
 #include "TaskSketchBasedParameters.h"
 #include "ViewProviderLoft.h"
+
 
 class Ui_TaskLoftParameters;
 class QListWidget;
@@ -48,7 +46,7 @@ class TaskLoftParameters : public TaskSketchBasedParameters
     Q_OBJECT
 
 public:
-    TaskLoftParameters(ViewProviderLoft *LoftView, bool newObj=false, QWidget *parent = 0);
+    TaskLoftParameters(ViewProviderLoft *LoftView, bool newObj=false, QWidget *parent = nullptr);
     ~TaskLoftParameters();
 
 private Q_SLOTS:
