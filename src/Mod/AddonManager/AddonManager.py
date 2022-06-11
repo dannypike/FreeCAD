@@ -103,7 +103,7 @@ class CommandAddonManager:
     def __init__(self):
         FreeCADGui.addPreferencePage(
             os.path.join(os.path.dirname(__file__), "AddonManagerOptions.ui"),
-            "Addon Manager",
+            translate("AddonsInstaller","Addon Manager"),
         )
 
         self.allowed_packages = set()
@@ -667,6 +667,7 @@ class CommandAddonManager:
             if size > 1000:  # Make sure there is actually data in there
                 cache_is_bad = False
         if self.update_cache or cache_is_bad:
+            self.update_cache = True
             self.macro_worker = FillMacroListWorker(self.get_cache_file_name("Macros"))
             self.macro_worker.status_message_signal.connect(self.show_information)
             self.macro_worker.progress_made.connect(self.update_progress_bar)
@@ -856,6 +857,7 @@ class CommandAddonManager:
             addon_repo.icon = self.get_icon(addon_repo)
         for repo in self.item_model.repos:
             if repo.name == addon_repo.name:
+                #self.item_model.reload_item(repo) # If we want to have later additions supercede earlier
                 return
         self.item_model.append_item(addon_repo)
 
@@ -1472,6 +1474,8 @@ class CommandAddonManager:
 
     def update_progress_bar(self, current_value: int, max_value: int) -> None:
         """Update the progress bar, showing it if it's hidden"""
+
+        max_value = max_value if max_value > 0 else 1
 
         if current_value < 0:
             current_value = 0

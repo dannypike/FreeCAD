@@ -2911,7 +2911,7 @@ void ViewProviderSketch::UpdateSolverInformation()
         signalSetUp(QString::fromUtf8("under_constrained"),
             tr("Under constrained:"),
             QString::fromUtf8("#dofs"),
-            QString::fromUtf8("%1 %2").arg(dofs).arg(tr("DoF")));
+            tr("%n DoF(s)","",dofs));
     }
     else {
         signalSetUp(QString::fromUtf8("fully_constrained"), tr("Fully constrained"), QString(), QString());
@@ -3106,7 +3106,7 @@ void ViewProviderSketch::deleteSelected()
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
-        Base::Console().Warning("Delete: Selection not restricted to one sketch and its subelements");
+        Base::Console().Warning("Delete: Selection not restricted to one sketch and its subelements\n");
         return;
     }
 
